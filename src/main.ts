@@ -16,7 +16,6 @@ async function bootstrap() {
     .setTitle('Student Management API')
     .setDescription('API for managing students with authentication')
     .setVersion('1.0')
-    .addBearerAuth()
     .addCookieAuth('token')
     .build();
 

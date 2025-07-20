@@ -17,6 +17,16 @@ export const API_RESPONSE_SCHEMAS = {
   LOGIN_SUCCESS: {
     status: 200,
     description: 'Login successful, JWT token set in cookie',
+    headers: {
+      'Set-Cookie': {
+        description: 'JWT token set as httpOnly cookie',
+        schema: {
+          type: 'string',
+          example:
+            'token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict; Max-Age=86400',
+        },
+      },
+    },
     schema: {
       example: {
         result: 'ok',

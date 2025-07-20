@@ -35,7 +35,6 @@ export class AuthController {
   ) {
     const { response, accessToken } = await this.authService.login(dto);
 
-    res.setHeader('Authorization', `Bearer ${accessToken}`);
     res.cookie('token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
