@@ -71,11 +71,16 @@ export class ResponseUtil {
     data?: T,
     result: 'ok' | 'failed' = 'ok',
   ): FutureApiResponse<T> {
-    return {
+    const response: any = {
       result,
       message,
-      data,
     };
+    
+    if (data !== null && data !== undefined) {
+      response.data = data;
+    }
+    
+    return response;
   }
 
   static createFutureApiErrorResponse(
@@ -84,7 +89,6 @@ export class ResponseUtil {
     return {
       result: 'failed',
       message,
-      data: null,
     };
   }
 }

@@ -32,7 +32,7 @@ import { ResponseUtil } from '../common/utils/response.util';
 import { FutureApiResponse } from '../common/interfaces/api-response.interface';
 import {
   API_RESPONSE_SCHEMAS,
-  VALIDATION_ERROR_EXAMPLES,
+  ESSAY_VALIDATION_ERROR_EXAMPLES,
 } from '../common/constants/api-response-schemas';
 
 @ApiTags('Essays')
@@ -55,7 +55,7 @@ export class EssaysController {
     type: SubmitEssayDto,
   })
   @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_SUBMIT_SUCCESS)
-  @ApiResponse(VALIDATION_ERROR_EXAMPLES)
+  @ApiResponse(ESSAY_VALIDATION_ERROR_EXAMPLES)
   @ApiResponse(API_RESPONSE_SCHEMAS.AUTHENTICATION_REQUIRED)
   @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_ALREADY_SUBMITTED)
   @UseInterceptors(

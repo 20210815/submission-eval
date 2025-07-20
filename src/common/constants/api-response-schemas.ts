@@ -36,71 +36,6 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  // 400 Bad Request - 단일 validation 에러
-  EMAIL_FORMAT_ERROR: {
-    status: 400,
-    description: 'Single validation error',
-    schema: {
-      example: {
-        result: 'error',
-        message: ['이메일 형식이 올바르지 않습니다'],
-      },
-    },
-  },
-
-  // 400 Bad Request - 여러 validation 에러
-  MULTIPLE_VALIDATION_ERRORS: {
-    status: 400,
-    description: 'Multiple validation errors',
-    schema: {
-      example: {
-        result: 'error',
-        message: [
-          '이메일 형식이 올바르지 않습니다',
-          '비밀번호는 최소 4글자 이상이어야 합니다',
-        ],
-      },
-    },
-  },
-
-  // 비밀번호 형식이 올바르지 않은 경우
-  PASSWORD_FORMAT_ERROR: {
-    status: 400,
-    description: 'Password format is invalid',
-    schema: {
-      example: {
-        result: 'error',
-        message: ['비밀번호는 최소 4자 이상이어야 합니다'],
-      },
-    },
-  },
-
-  // 401 Unauthorized
-
-  UNAUTHORIZED: {
-    status: 401,
-    description: 'Invalid credentials',
-    schema: {
-      example: {
-        result: 'error',
-        message: '사용자를 찾을 수 없습니다',
-      },
-    },
-  },
-
-  // 409 Conflict
-
-  CONFLICT: {
-    status: 409,
-    description: 'Conflict - Student already exists',
-    schema: {
-      example: {
-        result: 'error',
-        message: '이미 존재하는 이메일입니다',
-      },
-    },
-  },
-
   // Essay API responses
   ESSAY_SUBMIT_SUCCESS: {
     status: 200,
@@ -169,24 +104,54 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  ESSAY_ALREADY_SUBMITTED: {
-    status: 409,
-    description: '이미 해당 유형의 에세이를 제출함',
+  // 400 Bad Request - 단일 validation 에러
+  EMAIL_FORMAT_ERROR: {
+    status: 400,
+    description: 'Single validation error',
     schema: {
       example: {
         result: 'error',
-        message: '이미 해당 유형의 에세이를 제출하셨습니다.',
+        message: ['이메일 형식이 올바르지 않습니다'],
       },
     },
   },
 
-  ESSAY_NOT_FOUND: {
-    status: 404,
-    description: '에세이를 찾을 수 없음',
+  // 400 Bad Request - 여러 validation 에러
+  MULTIPLE_VALIDATION_ERRORS: {
+    status: 400,
+    description: 'Multiple validation errors',
     schema: {
       example: {
         result: 'error',
-        message: '해당 에세이를 찾을 수 없습니다.',
+        message: [
+          '이메일 형식이 올바르지 않습니다',
+          '비밀번호는 최소 4글자 이상이어야 합니다',
+        ],
+      },
+    },
+  },
+
+  // 비밀번호 형식이 올바르지 않은 경우
+  PASSWORD_FORMAT_ERROR: {
+    status: 400,
+    description: 'Password format is invalid',
+    schema: {
+      example: {
+        result: 'error',
+        message: ['비밀번호는 최소 4자 이상이어야 합니다'],
+      },
+    },
+  },
+
+  // 401 Unauthorized
+
+  UNAUTHORIZED: {
+    status: 401,
+    description: 'Invalid credentials',
+    schema: {
+      example: {
+        result: 'error',
+        message: '사용자를 찾을 수 없습니다',
       },
     },
   },
@@ -196,8 +161,70 @@ export const API_RESPONSE_SCHEMAS = {
     description: '인증 실패',
     schema: {
       example: {
+        result: 'failed',
+        message: ['로그인이 필요합니다.'],
+      },
+    },
+  },
+
+  // 404 Not Found
+  ESSAY_NOT_FOUND: {
+    status: 404,
+    description: '에세이를 찾을 수 없음',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '해당 에세이를 찾을 수 없습니다.',
+      },
+    },
+  },
+
+  // 409 Conflict
+
+  CONFLICT: {
+    status: 409,
+    description: 'Conflict - Student already exists',
+    schema: {
+      example: {
         result: 'error',
-        message: '인증이 필요합니다.',
+        message: '이미 존재하는 이메일입니다',
+      },
+    },
+  },
+
+  ESSAY_ALREADY_SUBMITTED: {
+    status: 409,
+    description: '이미 해당 유형의 에세이를 제출함',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '이미 writing 유형의 에세이를 제출했습니다.',
+      },
+    },
+  },
+};
+
+// Essay validation error examples
+export const ESSAY_VALIDATION_ERROR_EXAMPLES = {
+  status: 400,
+  description: 'Validation error responses',
+  content: {
+    'application/json': {
+      examples: {
+        singleValidationError: {
+          summary: '단일 필드 에러',
+          value: {
+            result: 'failed',
+            message: ['제목은 필수입니다.'],
+          },
+        },
+        multipleValidationErrors: {
+          summary: '여러 필드 에러',
+          value: {
+            result: 'failed',
+            message: ['제목은 필수입니다.', '에세이 내용은 필수입니다.'],
+          },
+        },
       },
     },
   },
