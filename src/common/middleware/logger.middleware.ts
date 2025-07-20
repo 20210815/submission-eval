@@ -8,8 +8,8 @@ export class LoggerMiddleware implements NestMiddleware {
     const traceId = uuidv4();
     const startTime = Date.now();
 
-    req['traceId'] = traceId;
-    req['startTime'] = startTime;
+    req.traceId = traceId;
+    req.startTime = startTime;
 
     res.on('finish', () => {
       const duration = Date.now() - startTime;
