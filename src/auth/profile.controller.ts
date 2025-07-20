@@ -8,7 +8,7 @@ export class ProfileController {
   @Get()
   getProfile(@Req() req: RequestWithUser) {
     return {
-      id: req.user.userId,
+      id: req.user.sub,
       name: req.user.name,
     };
   }

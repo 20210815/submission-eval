@@ -66,31 +66,25 @@ export class ResponseUtil {
     };
   }
 
-  static createFutureApiResponse(
+  static createFutureApiResponse<T = any>(
     message: string,
-    studentId: number,
-    additionalData?: {
-      score?: number;
-      feedback?: string;
-      highlights?: string[];
-      submitText?: string;
-      highlightSubmitText?: string;
-    }
-  ): FutureApiResponse {
+    data?: T,
+    result: 'ok' | 'failed' = 'ok',
+  ): FutureApiResponse<T> {
     return {
-      result: 'ok',
+      result,
       message,
-      studentId,
-      ...additionalData,
+      data,
     };
   }
 
   static createFutureApiErrorResponse(
     message: string | string[],
-  ): Omit<FutureApiResponse, 'studentId'> {
+  ): FutureApiResponse<null> {
     return {
-      result: 'error',
+      result: 'failed',
       message,
+      data: null,
     };
   }
 }

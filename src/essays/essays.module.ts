@@ -1,0 +1,26 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { EssaysController } from './essays.controller';
+import { EssaysService } from './essays.service';
+import { Essay } from './entities/essay.entity';
+import { EvaluationLog } from './entities/evaluation-log.entity';
+import { VideoProcessingService } from './services/video-processing.service';
+import { AzureStorageService } from './services/azure-storage.service';
+import { OpenAIService } from './services/openai.service';
+import { TextHighlightingService } from './services/text-highlighting.service';
+import { NotificationService } from './services/notification.service';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Essay, EvaluationLog])],
+  controllers: [EssaysController],
+  providers: [
+    EssaysService,
+    VideoProcessingService,
+    AzureStorageService,
+    OpenAIService,
+    TextHighlightingService,
+    NotificationService,
+  ],
+  exports: [EssaysService],
+})
+export class EssaysModule {}

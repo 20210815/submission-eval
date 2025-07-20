@@ -1,6 +1,7 @@
 import { AuthModule } from './auth/auth.module';
 import { StudentsModule } from './students/students.module';
 import { HealthModule } from './health/health.module';
+import { EssaysModule } from './essays/essays.module';
 import { Module, MiddlewareConsumer } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -14,6 +15,7 @@ import { AppService } from './app.service';
     AuthModule,
     StudentsModule,
     HealthModule,
+    EssaysModule,
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule.forRoot({
       pinoHttp: {

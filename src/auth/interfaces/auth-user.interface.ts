@@ -1,4 +1,4 @@
 export interface AuthUser {
-  userId: number;
+  sub: number;
   name: string;
 }
