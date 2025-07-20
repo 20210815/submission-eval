@@ -29,7 +29,18 @@ export class VideoProcessingService {
 
     try {
       // 1. 버퍼를 임시 파일로 저장
-      fs.writeFileSync(inputPath, videoBuffer);
+      try {
+        fs.writeFileSync(inputPath, videoBuffer);
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('ENOSPC')) {
+          throw new Error(
+            '디스크 공간이 부족합니다. 잠시 후 다시 시도해주세요.',
+          );
+        }
+        throw new Error(
+          `임시 파일 생성 실패: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
 
       // 2. 우측 이미지 제거 (좌측 50% 영역만 크롭)
       await this.cropVideo(inputPath, croppedVideoPath);
@@ -66,11 +77,26 @@ export class VideoProcessingService {
     outputPath: string,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
+      const timeout = setTimeout(
+        () => {
+          reject(
+            new Error('비디오 크롭 처리 시간이 초과되었습니다. (5분 제한)'),
+          );
+        },
+        5 * 60 * 1000,
+      ); // 5분 타임아웃
+
       ffmpeg(inputPath)
         .videoFilters('crop=iw/2:ih:0:0') // 좌측 50% 영역만 크롭
         .output(outputPath)
-        .on('end', () => resolve())
-        .on('error', (err) => reject(err))
+        .on('end', () => {
+          clearTimeout(timeout);
+          resolve();
+        })
+        .on('error', (err) => {
+          clearTimeout(timeout);
+          reject(new Error(`비디오 크롭 처리 실패: ${err.message}`));
+        })
         .run();
     });
   }
@@ -80,12 +106,27 @@ export class VideoProcessingService {
     outputPath: string,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
+      const timeout = setTimeout(
+        () => {
+          reject(
+            new Error('오디오 추출 처리 시간이 초과되었습니다. (3분 제한)'),
+          );
+        },
+        3 * 60 * 1000,
+      ); // 3분 타임아웃
+
       ffmpeg(inputPath)
         .output(outputPath)
         .audioCodec('mp3')
         .noVideo()
-        .on('end', () => resolve())
-        .on('error', (err) => reject(err))
+        .on('end', () => {
+          clearTimeout(timeout);
+          resolve();
+        })
+        .on('error', (err) => {
+          clearTimeout(timeout);
+          reject(new Error(`오디오 추출 실패: ${err.message}`));
+        })
         .run();
     });
   }
@@ -95,12 +136,27 @@ export class VideoProcessingService {
     outputPath: string,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
+      const timeout = setTimeout(
+        () => {
+          reject(
+            new Error('오디오 제거 처리 시간이 초과되었습니다. (3분 제한)'),
+          );
+        },
+        3 * 60 * 1000,
+      ); // 3분 타임아웃
+
       ffmpeg(inputPath)
         .output(outputPath)
         .videoCodec('copy')
         .noAudio()
-        .on('end', () => resolve())
-        .on('error', (err) => reject(err))
+        .on('end', () => {
+          clearTimeout(timeout);
+          resolve();
+        })
+        .on('error', (err) => {
+          clearTimeout(timeout);
+          reject(new Error(`오디오 제거 실패: ${err.message}`));
+        })
         .run();
     });
   }

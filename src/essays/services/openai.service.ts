@@ -46,8 +46,23 @@ export class OpenAIService {
       const response = await this.callOpenAI(prompt);
       return this.parseAIResponse(response);
     } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          throw new Error(
+            'AI 평가 요청 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.',
+          );
+        }
+        if (error.message.includes('Network Error')) {
+          throw new Error('네트워크 연결 오류로 AI 평가에 실패했습니다.');
+        }
+        if (error.message.includes('401') || error.message.includes('403')) {
+          throw new Error(
+            'AI 서비스 인증에 실패했습니다. 관리자에게 문의하세요.',
+          );
+        }
+      }
       throw new Error(
-        `AI evaluation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `AI 평가 중 오류가 발생했습니다: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
@@ -112,7 +127,10 @@ Provide feedback in Korean language.
     const response: AxiosResponse<OpenAIResponse> = await axios.post(
       url,
       data,
-      { headers },
+      {
+        headers,
+        timeout: 60000, // 60초 타임아웃
+      },
     );
 
     if (!response.data.choices || response.data.choices.length === 0) {

@@ -35,6 +35,8 @@ interface AIEvaluationResult {
 
 @Injectable()
 export class EssaysService {
+  private readonly processingStudents = new Set<number>();
+
   constructor(
     @InjectRepository(Essay)
     private readonly essayRepository: Repository<Essay>,
@@ -52,48 +54,62 @@ export class EssaysService {
     dto: SubmitEssayDto,
     videoFile?: Express.Multer.File,
   ): Promise<SubmitEssayResponseDto> {
-    // componentType별 중복 제출 방지 체크
-    const existingEssay = await this.essayRepository.findOne({
-      where: {
-        studentId,
-        componentType: dto.componentType,
-      },
-    });
-
-    if (existingEssay) {
+    // 동시 제출 방지 체크
+    if (this.processingStudents.has(studentId)) {
       throw new ConflictException(
-        `이미 ${dto.componentType} 유형의 에세이를 제출했습니다.`,
+        '이미 에세이 제출이 진행 중입니다. 잠시 후 다시 시도해주세요.',
       );
     }
 
-    // 새 에세이 생성
-    const essay = this.essayRepository.create({
-      title: dto.title,
-      submitText: dto.submitText,
-      componentType: dto.componentType,
-      studentId,
-      status: EvaluationStatus.PENDING,
-    });
+    this.processingStudents.add(studentId);
 
-    const savedEssay = await this.essayRepository.save(essay);
+    try {
+      // componentType별 중복 제출 방지 체크
+      const existingEssay = await this.essayRepository.findOne({
+        where: {
+          studentId,
+          componentType: dto.componentType,
+        },
+      });
 
-    // 비동기 평가 프로세스 시작 (await 없이)
-    void this.processEssayEvaluation(savedEssay.id, videoFile).catch(
-      (error) => {
-        console.error('Essay evaluation failed:', error);
-        void this.updateEssayStatus(
-          savedEssay.id,
-          EvaluationStatus.FAILED,
-          error instanceof Error ? error.message : 'Unknown error',
+      if (existingEssay) {
+        throw new ConflictException(
+          `이미 ${dto.componentType} 유형의 에세이를 제출했습니다.`,
         );
-      },
-    );
+      }
 
-    return {
-      essayId: savedEssay.id,
-      status: EvaluationStatus.PENDING,
-      message: '에세이가 성공적으로 제출되었습니다. 평가가 진행 중입니다.',
-    };
+      // 새 에세이 생성
+      const essay = this.essayRepository.create({
+        title: dto.title,
+        submitText: dto.submitText,
+        componentType: dto.componentType,
+        studentId,
+        status: EvaluationStatus.PENDING,
+      });
+
+      const savedEssay = await this.essayRepository.save(essay);
+
+      // 비동기 평가 프로세스 시작 (await 없이)
+      void this.processEssayEvaluation(savedEssay.id, videoFile).catch(
+        (error) => {
+          console.error('Essay evaluation failed:', error);
+          void this.updateEssayStatus(
+            savedEssay.id,
+            EvaluationStatus.FAILED,
+            error instanceof Error ? error.message : 'Unknown error',
+          );
+        },
+      );
+
+      return {
+        essayId: savedEssay.id,
+        status: EvaluationStatus.PENDING,
+        message: '에세이가 성공적으로 제출되었습니다. 평가가 진행 중입니다.',
+      };
+    } finally {
+      // 처리 완료 후 학생 ID 제거
+      this.processingStudents.delete(studentId);
+    }
   }
 
   async getEssay(

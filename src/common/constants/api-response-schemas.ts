@@ -154,6 +154,76 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
+  // 동시 제출 에러
+  CONCURRENT_SUBMISSION: {
+    status: 409,
+    description: '동시 에세이 제출 시도',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '이미 에세이 제출이 진행 중입니다. 잠시 후 다시 시도해주세요.',
+      },
+    },
+  },
+
+  // 비디오 처리 에러들
+  VIDEO_PROCESSING_TIMEOUT: {
+    status: 500,
+    description: '비디오 처리 타임아웃',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '비디오 크롭 처리 시간이 초과되었습니다. (5분 제한)',
+      },
+    },
+  },
+
+  DISK_SPACE_ERROR: {
+    status: 500,
+    description: '디스크 공간 부족',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '디스크 공간이 부족합니다. 잠시 후 다시 시도해주세요.',
+      },
+    },
+  },
+
+  // AI 서비스 에러들
+  AI_TIMEOUT_ERROR: {
+    status: 500,
+    description: 'AI 평가 타임아웃',
+    schema: {
+      example: {
+        result: 'failed',
+        message:
+          'AI 평가 요청 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.',
+      },
+    },
+  },
+
+  AI_NETWORK_ERROR: {
+    status: 500,
+    description: 'AI 서비스 네트워크 오류',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '네트워크 연결 오류로 AI 평가에 실패했습니다.',
+      },
+    },
+  },
+
+  AI_AUTH_ERROR: {
+    status: 500,
+    description: 'AI 서비스 인증 실패',
+    schema: {
+      example: {
+        result: 'failed',
+        message: 'AI 서비스 인증에 실패했습니다. 관리자에게 문의하세요.',
+      },
+    },
+  },
+
   // 401 Unauthorized
 
   UNAUTHORIZED: {
@@ -235,6 +305,38 @@ export const ESSAY_VALIDATION_ERROR_EXAMPLES = {
             result: 'failed',
             message: ['제목은 필수입니다.', '에세이 내용은 필수입니다.'],
           },
+        },
+      },
+    },
+  },
+};
+
+// 서버 에러 예시 (500번대)
+export const SERVER_ERROR_EXAMPLES = {
+  status: 500,
+  description: '서버 처리 오류',
+  content: {
+    'application/json': {
+      examples: {
+        videoProcessingTimeout: {
+          summary: API_RESPONSE_SCHEMAS.VIDEO_PROCESSING_TIMEOUT.description,
+          value: API_RESPONSE_SCHEMAS.VIDEO_PROCESSING_TIMEOUT.schema.example,
+        },
+        diskSpaceError: {
+          summary: API_RESPONSE_SCHEMAS.DISK_SPACE_ERROR.description,
+          value: API_RESPONSE_SCHEMAS.DISK_SPACE_ERROR.schema.example,
+        },
+        aiTimeoutError: {
+          summary: API_RESPONSE_SCHEMAS.AI_TIMEOUT_ERROR.description,
+          value: API_RESPONSE_SCHEMAS.AI_TIMEOUT_ERROR.schema.example,
+        },
+        aiNetworkError: {
+          summary: API_RESPONSE_SCHEMAS.AI_NETWORK_ERROR.description,
+          value: API_RESPONSE_SCHEMAS.AI_NETWORK_ERROR.schema.example,
+        },
+        aiAuthError: {
+          summary: API_RESPONSE_SCHEMAS.AI_AUTH_ERROR.description,
+          value: API_RESPONSE_SCHEMAS.AI_AUTH_ERROR.schema.example,
         },
       },
     },

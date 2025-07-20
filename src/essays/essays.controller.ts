@@ -32,6 +32,7 @@ import { FutureApiResponse } from '../common/interfaces/api-response.interface';
 import {
   API_RESPONSE_SCHEMAS,
   ESSAY_VALIDATION_ERROR_EXAMPLES,
+  SERVER_ERROR_EXAMPLES,
 } from '../common/constants/api-response-schemas';
 import { KoreanParseIntPipe } from '../common/pipes/korean-parse-int.pipe';
 
@@ -58,6 +59,8 @@ export class EssaysController {
   @ApiResponse(ESSAY_VALIDATION_ERROR_EXAMPLES)
   @ApiResponse(API_RESPONSE_SCHEMAS.AUTHENTICATION_REQUIRED)
   @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_ALREADY_SUBMITTED)
+  @ApiResponse(API_RESPONSE_SCHEMAS.CONCURRENT_SUBMISSION)
+  @ApiResponse(SERVER_ERROR_EXAMPLES)
   @UseInterceptors(
     FileInterceptor('video', {
       limits: {
