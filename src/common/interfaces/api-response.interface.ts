@@ -32,3 +32,15 @@ export interface StandardSuccessResponse<T = any> {
   data?: T;
   timestamp: string;
 }
+
+export interface FutureApiResponse<T = any> {
+  result: 'ok' | 'error';
+  message: string | null;
+  studentId: number;
+  score?: number;
+  feedback?: string;
+  highlights?: string[];
+  submitText?: string;
+  highlightSubmitText?: string;
+  data?: T;
+}
