@@ -6,15 +6,18 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Student } from '../students/entities/student.entity';
 import { PassportModule } from '@nestjs/passport';
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
-// auth.module.ts
 @Module({
   imports: [
     TypeOrmModule.forFeature([Student]),
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1d' },
+    JwtModule.registerAsync({
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '1d' },
+      }),
+      inject: [ConfigService],
     }),
   ],
   providers: [AuthService, JwtStrategy],

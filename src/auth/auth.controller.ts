@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res } from '@nestjs/common';
+import { Controller, Post, Body, Res, HttpCode } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -25,10 +25,12 @@ export class AuthController {
   }
 
   @Post('login')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Login student' })
   @ApiBody({ type: LoginDto })
   @ApiResponse(API_RESPONSE_SCHEMAS.LOGIN_SUCCESS)
   @ApiResponse(API_RESPONSE_SCHEMAS.UNAUTHORIZED)
+  @ApiResponse(VALIDATION_ERROR_EXAMPLES)
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
