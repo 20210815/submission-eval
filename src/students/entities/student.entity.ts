@@ -8,6 +8,6 @@ export class Student extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: MAX_NAME_LENGTH })
+  @Column({ length: MAX_NAME_LENGTH, nullable: false })
   name: string;
 }
