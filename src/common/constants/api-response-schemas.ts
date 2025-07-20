@@ -100,6 +100,107 @@ export const API_RESPONSE_SCHEMAS = {
       },
     },
   },
+
+  // Essay API responses
+  ESSAY_SUBMIT_SUCCESS: {
+    status: 200,
+    description: '에세이 제출 성공',
+    schema: {
+      example: {
+        result: 'ok',
+        message: '에세이가 성공적으로 제출되었습니다.',
+        data: {
+          essayId: 1,
+          status: 'PENDING',
+          message: '에세이가 성공적으로 제출되었습니다. 평가가 진행 중입니다.',
+        },
+      },
+    },
+  },
+
+  ESSAY_GET_SUCCESS: {
+    status: 200,
+    description: '에세이 조회 성공',
+    schema: {
+      example: {
+        result: 'ok',
+        message: '에세이 조회에 성공했습니다.',
+        data: {
+          id: 1,
+          title: 'My English Essay',
+          submitText: 'This is my essay about English language learning...',
+          componentType: 'WRITING',
+          status: 'COMPLETED',
+          score: 85,
+          feedback:
+            '문법과 어휘 사용이 우수합니다. 다만 문장 구조를 더 다양하게 사용하면 좋겠습니다.',
+          highlights: ['excellent vocabulary', 'good grammar'],
+          highlightSubmitText:
+            'This is my essay with <b>excellent vocabulary</b>...',
+          videoUrl: 'https://storage.example.com/videos/essay1_video.mp4',
+          audioUrl: 'https://storage.example.com/audios/essay1_audio.mp3',
+          createdAt: '2023-12-01T10:00:00Z',
+          updatedAt: '2023-12-01T10:30:00Z',
+        },
+      },
+    },
+  },
+
+  ESSAY_LIST_SUCCESS: {
+    status: 200,
+    description: '에세이 목록 조회 성공',
+    schema: {
+      example: {
+        result: 'ok',
+        message: '에세이 목록 조회에 성공했습니다.',
+        data: [
+          {
+            id: 1,
+            title: 'My English Essay',
+            submitText: 'This is my essay about English language learning...',
+            componentType: 'WRITING',
+            status: 'COMPLETED',
+            score: 85,
+            createdAt: '2023-12-01T10:00:00Z',
+            updatedAt: '2023-12-01T10:30:00Z',
+          },
+        ],
+      },
+    },
+  },
+
+  ESSAY_ALREADY_SUBMITTED: {
+    status: 409,
+    description: '이미 해당 유형의 에세이를 제출함',
+    schema: {
+      example: {
+        result: 'error',
+        message: '이미 해당 유형의 에세이를 제출하셨습니다.',
+      },
+    },
+  },
+
+  ESSAY_NOT_FOUND: {
+    status: 404,
+    description: '에세이를 찾을 수 없음',
+    schema: {
+      example: {
+        result: 'error',
+        message: '해당 에세이를 찾을 수 없습니다.',
+      },
+    },
+  },
+
+  AUTHENTICATION_REQUIRED: {
+    status: 401,
+    description: '인증 실패',
+    schema: {
+      example: {
+        result: 'error',
+        message: '인증이 필요합니다.',
+      },
+    },
+  },
 };
 
 export const VALIDATION_ERROR_EXAMPLES = {
