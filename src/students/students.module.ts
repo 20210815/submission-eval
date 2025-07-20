@@ -9,6 +9,6 @@ import { StudentsService } from './students.service';
   imports: [TypeOrmModule.forFeature([Student])],
   controllers: [StudentsController],
   providers: [StudentsService],
-  exports: [TypeOrmModule], // 필요 시 다른 모듈에서도 사용 가능
+  exports: [StudentsService], // 필요 시 다른 모듈에서도 사용 가능
 })
 export class StudentsModule {}
