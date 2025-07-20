@@ -55,7 +55,7 @@ export class AuthService {
     if (!isMatch)
       throw new UnauthorizedException('비밀번호가 일치하지 않습니다');
 
-    const payload = { sub: student.id };
+    const payload = { sub: student.id, name: student.name };
     const token = await this.jwtService.signAsync(payload);
 
     return {
