@@ -143,6 +143,17 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
+  INVALID_ID_FORMAT: {
+    status: 400,
+    description: '잘못된 ID 형식',
+    schema: {
+      example: {
+        result: 'failed',
+        message: ['숫자 형태의 ID가 필요합니다.'],
+      },
+    },
+  },
+
   // 401 Unauthorized
 
   UNAUTHORIZED: {

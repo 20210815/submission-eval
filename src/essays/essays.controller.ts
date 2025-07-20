@@ -8,7 +8,6 @@ import {
   UseInterceptors,
   UploadedFile,
   Req,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -34,6 +33,7 @@ import {
   API_RESPONSE_SCHEMAS,
   ESSAY_VALIDATION_ERROR_EXAMPLES,
 } from '../common/constants/api-response-schemas';
+import { KoreanParseIntPipe } from '../common/pipes/korean-parse-int.pipe';
 
 @ApiTags('Essays')
 @ApiCookieAuth('token')
@@ -117,11 +117,12 @@ export class EssaysController {
     type: Number,
   })
   @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_GET_SUCCESS)
+  @ApiResponse(API_RESPONSE_SCHEMAS.INVALID_ID_FORMAT)
   @ApiResponse(API_RESPONSE_SCHEMAS.AUTHENTICATION_REQUIRED)
   @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_NOT_FOUND)
   async getEssay(
     @Req() req: Request,
-    @Param('id', ParseIntPipe) essayId: number,
+    @Param('id', KoreanParseIntPipe) essayId: number,
   ): Promise<FutureApiResponse<EssayResponseDto | null>> {
     try {
       const studentId = req.user?.sub;
