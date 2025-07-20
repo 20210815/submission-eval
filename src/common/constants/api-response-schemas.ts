@@ -26,14 +26,41 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  // 400 Bad Request
-  BAD_REQUEST: {
+  // 400 Bad Request - 단일 validation 에러
+  EMAIL_FORMAT_ERROR: {
     status: 400,
-    description: 'Bad Request',
+    description: 'Single validation error',
     schema: {
       example: {
         result: 'error',
-        message: '이메일 형식이 올바르지 않습니다',
+        message: ['이메일 형식이 올바르지 않습니다'],
+      },
+    },
+  },
+
+  // 400 Bad Request - 여러 validation 에러
+  MULTIPLE_VALIDATION_ERRORS: {
+    status: 400,
+    description: 'Multiple validation errors',
+    schema: {
+      example: {
+        result: 'error',
+        message: [
+          '이메일 형식이 올바르지 않습니다',
+          '비밀번호는 최소 4글자 이상이어야 합니다',
+        ],
+      },
+    },
+  },
+
+  // 비밀번호 형식이 올바르지 않은 경우
+  PASSWORD_FORMAT_ERROR: {
+    status: 400,
+    description: 'Password format is invalid',
+    schema: {
+      example: {
+        result: 'error',
+        message: ['비밀번호는 최소 4자 이상이어야 합니다'],
       },
     },
   },
@@ -59,7 +86,30 @@ export const API_RESPONSE_SCHEMAS = {
     schema: {
       example: {
         result: 'error',
-        message: '이미 존재하는 이름입니다',
+        message: '이미 존재하는 이메일입니다',
+      },
+    },
+  },
+};
+
+export const VALIDATION_ERROR_EXAMPLES = {
+  status: 400,
+  description: 'Validation error responses',
+  content: {
+    'application/json': {
+      examples: {
+        emailFormatError: {
+          summary: API_RESPONSE_SCHEMAS.EMAIL_FORMAT_ERROR.description,
+          value: API_RESPONSE_SCHEMAS.EMAIL_FORMAT_ERROR.schema.example,
+        },
+        passwordFormatError: {
+          summary: API_RESPONSE_SCHEMAS.PASSWORD_FORMAT_ERROR.description,
+          value: API_RESPONSE_SCHEMAS.PASSWORD_FORMAT_ERROR.schema.example,
+        },
+        multipleValidationErrors: {
+          summary: API_RESPONSE_SCHEMAS.MULTIPLE_VALIDATION_ERRORS.description,
+          value: API_RESPONSE_SCHEMAS.MULTIPLE_VALIDATION_ERRORS.schema.example,
+        },
       },
     },
   },

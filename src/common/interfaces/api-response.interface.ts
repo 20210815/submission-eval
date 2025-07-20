@@ -35,7 +35,7 @@ export interface StandardSuccessResponse<T = any> {
 
 export interface FutureApiResponse<T = any> {
   result: 'ok' | 'error';
-  message: string | null;
+  message: string | string[] | null;
   studentId: number;
   score?: number;
   feedback?: string;

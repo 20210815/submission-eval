@@ -8,7 +8,7 @@ export class SignupDto {
   name: string;
 
   @ApiProperty({ example: 'john@example.com', description: 'Student email' })
-  @IsEmail({}, { message: '유효한 이메일 주소를 입력해주세요.' })
+  @IsEmail({}, { message: '이메일 형식이 올바르지 않습니다' })
   @IsNotEmpty({ message: '이메일은 필수입니다.' })
   email: string;
 

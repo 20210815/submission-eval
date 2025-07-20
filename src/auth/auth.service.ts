@@ -11,7 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResponseUtil } from '../common/utils/response.util';
-import { StandardSuccessResponse } from '../common/interfaces/api-response.interface';
+import { FutureApiResponse } from '../common/interfaces/api-response.interface';
 
 @Injectable()
 export class AuthService {
@@ -21,12 +21,12 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signup(dto: SignupDto): Promise<StandardSuccessResponse> {
+  async signup(dto: SignupDto): Promise<FutureApiResponse> {
     const existing = await this.studentRepo.findOne({
-      where: { name: dto.name },
+      where: { email: dto.email },
     });
     if (existing) {
-      throw new ConflictException('이미 존재하는 이름입니다');
+      throw new ConflictException('이미 존재하는 이메일입니다');
     }
 
     const hashedPw = await bcrypt.hash(dto.password, 10);
@@ -37,16 +37,15 @@ export class AuthService {
     });
     await this.studentRepo.save(student);
 
-    return ResponseUtil.createStandardSuccessResponse(
-      '회원가입 성공',
-      undefined,
-      201,
+    return ResponseUtil.createFutureApiResponse(
+      '회원가입에 성공했습니다',
+      student.id,
     );
   }
 
   async login(
     dto: LoginDto,
-  ): Promise<StandardSuccessResponse<{ accessToken: string }>> {
+  ): Promise<{ response: FutureApiResponse; accessToken: string }> {
     const student = await this.studentRepo.findOne({
       where: { email: dto.email },
     });
@@ -59,10 +58,12 @@ export class AuthService {
     const payload = { sub: student.id };
     const token = await this.jwtService.signAsync(payload);
 
-    return ResponseUtil.createStandardSuccessResponse(
-      '로그인 성공',
-      { accessToken: token },
-      200,
-    );
+    return {
+      response: ResponseUtil.createFutureApiResponse(
+        '로그인에 성공했습니다',
+        student.id,
+      ),
+      accessToken: token,
+    };
   }
 }

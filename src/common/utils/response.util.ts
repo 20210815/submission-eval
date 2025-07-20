@@ -3,7 +3,8 @@ import {
   ApiErrorResponse, 
   ApiSuccessResponse, 
   StandardErrorResponse, 
-  StandardSuccessResponse 
+  StandardSuccessResponse,
+  FutureApiResponse
 } from '../interfaces/api-response.interface';
 
 export class ResponseUtil {
@@ -62,6 +63,34 @@ export class ResponseUtil {
       message,
       data,
       timestamp: new Date().toISOString(),
+    };
+  }
+
+  static createFutureApiResponse(
+    message: string,
+    studentId: number,
+    additionalData?: {
+      score?: number;
+      feedback?: string;
+      highlights?: string[];
+      submitText?: string;
+      highlightSubmitText?: string;
+    }
+  ): FutureApiResponse {
+    return {
+      result: 'ok',
+      message,
+      studentId,
+      ...additionalData,
+    };
+  }
+
+  static createFutureApiErrorResponse(
+    message: string | string[],
+  ): Omit<FutureApiResponse, 'studentId'> {
+    return {
+      result: 'error',
+      message,
     };
   }
 }

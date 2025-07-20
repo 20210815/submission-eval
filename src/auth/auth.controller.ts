@@ -4,7 +4,10 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { API_RESPONSE_SCHEMAS } from '../common/constants/api-response-schemas';
+import {
+  API_RESPONSE_SCHEMAS,
+  VALIDATION_ERROR_EXAMPLES,
+} from '../common/constants/api-response-schemas';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -15,7 +18,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Register new student' })
   @ApiBody({ type: SignupDto })
   @ApiResponse(API_RESPONSE_SCHEMAS.SIGNUP_SUCCESS)
-  @ApiResponse(API_RESPONSE_SCHEMAS.BAD_REQUEST)
+  @ApiResponse(VALIDATION_ERROR_EXAMPLES)
   @ApiResponse(API_RESPONSE_SCHEMAS.CONFLICT)
   signup(@Body() dto: SignupDto) {
     return this.authService.signup(dto);
@@ -30,15 +33,16 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.login(dto);
+    const { response, accessToken } = await this.authService.login(dto);
 
-    res.cookie('token', result.data?.accessToken, {
+    res.setHeader('Authorization', `Bearer ${accessToken}`);
+    res.cookie('token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    return result;
+    return response;
   }
 }
