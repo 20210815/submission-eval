@@ -187,9 +187,8 @@ describe('Auth Controller (e2e)', () => {
       });
 
       // 쿠키가 설정되었는지 확인
-      const cookies = response.headers['set-cookie'] as unknown as
-        | string[]
-        | undefined;
+      const cookiesHeader = response.headers['set-cookie'];
+      const cookies = isStringArrayOrUndefined(cookiesHeader) ? cookiesHeader : undefined;
       expect(cookies).toBeDefined();
       expect(
         cookies?.some((cookie: string) => cookie.startsWith('token=')),
