@@ -71,7 +71,7 @@ export class AzureStorageService {
   }
 
   async uploadAudio(filePath: string): Promise<UploadedFile> {
-    return this.uploadFile(filePath, 'audio.mp3', 'audio/mpeg');
+    return this.uploadFile(filePath, 'audio.m4a', 'audio/mp4');
   }
 
   private generateSasUrl(blobName: string, validityHours: number): string {

@@ -1,10 +1,10 @@
 import { HttpStatus } from '@nestjs/common';
-import { 
-  ApiErrorResponse, 
-  ApiSuccessResponse, 
-  StandardErrorResponse, 
+import {
+  ApiErrorResponse,
+  ApiSuccessResponse,
+  StandardErrorResponse,
   StandardSuccessResponse,
-  FutureApiResponse
+  FutureApiResponse,
 } from '../interfaces/api-response.interface';
 
 export class ResponseUtil {
@@ -14,11 +14,11 @@ export class ResponseUtil {
     const message =
       typeof exceptionResponse === 'string'
         ? exceptionResponse
-        : (exceptionResponse as any).message || '오류가 발생했습니다';
+        : this.extractMessage(exceptionResponse);
 
     return {
       result: 'failed',
-      message: Array.isArray(message) ? message[0] : message,
+      message: this.normalizeMessage(message),
       timestamp: new Date().toISOString(),
     };
   }
@@ -42,12 +42,12 @@ export class ResponseUtil {
     const message =
       typeof exceptionResponse === 'string'
         ? exceptionResponse
-        : (exceptionResponse as any).message || '오류가 발생했습니다';
+        : this.extractMessage(exceptionResponse);
 
     return {
       success: false,
       statusCode: status,
-      message: Array.isArray(message) ? message[0] : message,
+      message: this.normalizeMessage(message),
       timestamp: new Date().toISOString(),
     };
   }
@@ -71,15 +71,15 @@ export class ResponseUtil {
     data?: T,
     result: 'ok' | 'failed' = 'ok',
   ): FutureApiResponse<T> {
-    const response: any = {
+    const response: FutureApiResponse<T> = {
       result,
       message,
     };
-    
+
     if (data !== null && data !== undefined) {
-      response.data = data;
+      (response as FutureApiResponse<T> & { data: T }).data = data;
     }
-    
+
     return response;
   }
 
@@ -90,5 +90,23 @@ export class ResponseUtil {
       result: 'failed',
       message,
     };
+  }
+
+  private static extractMessage(exceptionResponse: object): string | string[] {
+    if (exceptionResponse && typeof exceptionResponse === 'object') {
+      if ('message' in exceptionResponse) {
+        const msg = exceptionResponse.message;
+        if (typeof msg === 'string' || Array.isArray(msg)) {
+          return msg;
+        }
+      }
+    }
+    return '오류가 발생했습니다';
+  }
+
+  private static normalizeMessage(message: string | string[]): string {
+    return Array.isArray(message)
+      ? message[0] || '오류가 발생했습니다'
+      : message;
   }
 }

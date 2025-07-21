@@ -8,6 +8,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Req,
+  HttpCode,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -44,6 +45,7 @@ export class EssaysController {
   constructor(private readonly essaysService: EssaysService) {}
 
   @Post('submit')
+  @HttpCode(200)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '에세이 제출',

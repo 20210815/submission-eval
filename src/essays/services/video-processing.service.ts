@@ -25,7 +25,7 @@ export class VideoProcessingService {
     const inputPath = path.join(this.tempDir, `${fileId}_input.mp4`);
     const croppedVideoPath = path.join(this.tempDir, `${fileId}_cropped.mp4`);
     const silentVideoPath = path.join(this.tempDir, `${fileId}_silent.mp4`);
-    const audioPath = path.join(this.tempDir, `${fileId}_audio.mp3`);
+    const audioPath = path.join(this.tempDir, `${fileId}_audio.m4a`);
 
     try {
       // 1. 버퍼를 임시 파일로 저장
@@ -117,7 +117,7 @@ export class VideoProcessingService {
 
       ffmpeg(inputPath)
         .output(outputPath)
-        .audioCodec('mp3')
+        .audioCodec('aac')
         .noVideo()
         .on('end', () => {
           clearTimeout(timeout);
