@@ -87,7 +87,7 @@ export class VideoProcessingService {
       ); // 5분 타임아웃
 
       ffmpeg(inputPath)
-        .videoFilters('crop=iw/2:ih:0:0') // 좌측 50% 영역만 크롭
+        .videoFilters('crop=iw/2:ih:iw/2:0') // 우측 50% 영역만 크롭
         .output(outputPath)
         .on('end', () => {
           clearTimeout(timeout);
