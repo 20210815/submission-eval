@@ -96,7 +96,7 @@ export class NotificationService {
             text: `*Error:* \`${data.errorMessage}\``,
           },
         },
-        ...(data.traceId
+        ...(data.traceId && data.traceId !== 'unknown'
           ? [
               {
                 type: 'section',
