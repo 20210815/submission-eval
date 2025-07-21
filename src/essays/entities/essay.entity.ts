@@ -11,7 +11,6 @@ import { BaseEntity } from '../../common/entities/base.entity';
 export enum ComponentType {
   SPEAKING = 'speaking',
   WRITING = 'writing',
-  LISTENING = 'listening',
   READING = 'reading',
 }
 
