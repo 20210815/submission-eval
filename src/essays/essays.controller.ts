@@ -23,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { EssaysService } from './essays.service';
+import { NotificationService } from './services/notification.service';
 import { SubmitEssayDto } from './dto/submit-essay.dto';
 import {
   EssayResponseDto,
@@ -39,12 +40,15 @@ import { KoreanParseIntPipe } from '../common/pipes/korean-parse-int.pipe';
 
 @ApiTags('Essays')
 @ApiBearerAuth()
-@Controller('essays')
+@Controller('v1/submissions')
 @UseGuards(JwtAuthGuard)
 export class EssaysController {
-  constructor(private readonly essaysService: EssaysService) {}
+  constructor(
+    private readonly essaysService: EssaysService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
-  @Post('submit')
+  @Post()
   @HttpCode(200)
   @ApiBearerAuth()
   @ApiOperation({
@@ -101,23 +105,39 @@ export class EssaysController {
         '에세이가 성공적으로 제출되었습니다.',
         result,
       );
-    } catch (error) {
+    } catch (error: unknown) {
+      // 컨트롤러 레벨 에러도 슬랙 알림 전송
+      const studentId = req.user?.sub;
+      const errorMessage =
+        error instanceof Error ? error.message : '에세이 제출에 실패했습니다.';
+
+      if (studentId) {
+        const notificationPromise: Promise<void> =
+          this.notificationService.notifyEvaluationFailure(
+            0,
+            studentId,
+            errorMessage,
+            `controller_${Date.now()}`,
+          );
+        void notificationPromise.catch(console.error);
+      }
+
       return ResponseUtil.createFutureApiResponse<null>(
-        error instanceof Error ? error.message : '에세이 제출에 실패했습니다.',
+        errorMessage,
         null,
         'failed',
       );
     }
   }
 
-  @Get(':id')
+  @Get(':submissionId')
   @ApiBearerAuth()
   @ApiOperation({
     summary: '에세이 조회',
     description: '특정 에세이의 상세 정보를 조회합니다.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'submissionId',
     description: '에세이 ID',
     type: Number,
   })
@@ -127,7 +147,7 @@ export class EssaysController {
   @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_NOT_FOUND)
   async getEssay(
     @Req() req: Request,
-    @Param('id', KoreanParseIntPipe) essayId: number,
+    @Param('submissionId', KoreanParseIntPipe) essayId: number,
   ): Promise<FutureApiResponse<EssayResponseDto | null>> {
     try {
       const studentId = req.user?.sub;

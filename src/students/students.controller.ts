@@ -8,7 +8,7 @@ import {
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('Students')
-@Controller('students')
+@Controller('v1/students')
 export class StudentsController {
   @Get()
   @UseGuards(JwtAuthGuard)

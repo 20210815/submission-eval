@@ -10,7 +10,7 @@ import {
 } from '../common/constants/api-response-schemas';
 
 @ApiTags('Authentication')
-@Controller('auth')
+@Controller('v1/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

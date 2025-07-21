@@ -219,10 +219,8 @@ export class EssaysService {
           {
             traceId,
             requestData: {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-              originalName: videoFile!.originalname,
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-              size: videoFile!.size,
+              originalName: videoFile.originalname,
+              size: videoFile.size,
             },
           },
         );
@@ -230,8 +228,7 @@ export class EssaysService {
         const startTime = Date.now();
         try {
           processedVideo = (await this.videoProcessingService.processVideo(
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-            videoFile!.buffer,
+            videoFile.buffer,
           )) as ProcessedVideo;
 
           await this.logEvaluation(
@@ -445,7 +442,7 @@ export class EssaysService {
       const essayForNotification = await this.essayRepository.findOne({
         where: { id: essayId },
       });
-      this.notificationService.notifyEvaluationFailure(
+      void this.notificationService.notifyEvaluationFailure(
         essayId,
         essayForNotification?.studentId || 0,
         error instanceof Error ? error.message : 'Unknown error',
