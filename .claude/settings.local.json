@@ -16,7 +16,9 @@
       "Bash(powershell:*)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "Bash(\"/c/Users/kyumi/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-7.1.1-full_build/bin/ffmpeg.exe\" -version)"
+      "Bash(\"/c/Users/kyumi/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-7.1.1-full_build/bin/ffmpeg.exe\" -version)",
+      "Bash(git log:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

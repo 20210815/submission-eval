@@ -22,6 +22,13 @@ export class NotificationService {
     errorMessage: string,
     traceId?: string,
   ): Promise<void> {
+    console.log('🔔 NotificationService.notifyEvaluationFailure called:', {
+      essayId,
+      studentId,
+      errorMessage,
+      traceId,
+    });
+
     const notificationData: NotificationData = {
       type: 'ESSAY_EVALUATION_FAILED',
       essayId,
@@ -41,9 +48,13 @@ export class NotificationService {
 
   private async sendSlackNotification(data: NotificationData): Promise<void> {
     const slackWebhookUrl = this.configService.get<string>('SLACK_WEBHOOK_URL');
+    console.log(
+      '🔗 Slack webhook URL:',
+      slackWebhookUrl ? 'CONFIGURED' : 'NOT CONFIGURED',
+    );
 
     if (!slackWebhookUrl) {
-      console.warn('Slack webhook URL not configured');
+      console.warn('❌ Slack webhook URL not configured');
       return;
     }
 
@@ -100,16 +111,26 @@ export class NotificationService {
     };
 
     try {
-      await axios.post(slackWebhookUrl, message, {
+      console.log(
+        '📤 Sending Slack notification...',
+        JSON.stringify(message, null, 2),
+      );
+      const response = await axios.post(slackWebhookUrl, message, {
         timeout: 5000,
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      console.log('Slack notification sent successfully');
+      console.log(
+        '✅ Slack notification sent successfully. Response status:',
+        response.status,
+      );
     } catch (error) {
-      console.error('Failed to send Slack notification:', error);
+      console.error(
+        '❌ Failed to send Slack notification:',
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
     }
   }
-
 }

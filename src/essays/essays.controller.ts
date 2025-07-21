@@ -23,7 +23,6 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { EssaysService } from './essays.service';
-import { NotificationService } from './services/notification.service';
 import { SubmitEssayDto } from './dto/submit-essay.dto';
 import {
   EssayResponseDto,
@@ -43,10 +42,7 @@ import { KoreanParseIntPipe } from '../common/pipes/korean-parse-int.pipe';
 @Controller('v1/submissions')
 @UseGuards(JwtAuthGuard)
 export class EssaysController {
-  constructor(
-    private readonly essaysService: EssaysService,
-    private readonly notificationService: NotificationService,
-  ) {}
+  constructor(private readonly essaysService: EssaysService) {}
 
   @Post()
   @HttpCode(200)
@@ -106,21 +102,8 @@ export class EssaysController {
         result,
       );
     } catch (error: unknown) {
-      // 컨트롤러 레벨 에러도 슬랙 알림 전송
-      const studentId = req.user?.sub;
       const errorMessage =
         error instanceof Error ? error.message : '에세이 제출에 실패했습니다.';
-
-      if (studentId) {
-        const notificationPromise: Promise<void> =
-          this.notificationService.notifyEvaluationFailure(
-            0,
-            studentId,
-            errorMessage,
-            `controller_${Date.now()}`,
-          );
-        void notificationPromise.catch(console.error);
-      }
 
       return ResponseUtil.createFutureApiResponse<null>(
         errorMessage,
