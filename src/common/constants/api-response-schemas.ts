@@ -16,14 +16,13 @@ export const API_RESPONSE_SCHEMAS = {
 
   LOGIN_SUCCESS: {
     status: 200,
-    description: 'Login successful, JWT token set in cookie',
+    description: 'Login successful, JWT token returned in Authorization header',
     headers: {
-      'Set-Cookie': {
-        description: 'JWT token set as httpOnly cookie',
+      Authorization: {
+        description: 'JWT Bearer token',
         schema: {
           type: 'string',
-          example:
-            'token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict; Max-Age=86400',
+          example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         },
       },
     },
@@ -46,8 +45,19 @@ export const API_RESPONSE_SCHEMAS = {
         message: '에세이가 성공적으로 제출되었습니다.',
         data: {
           essayId: 1,
-          status: 'PENDING',
-          message: '에세이가 성공적으로 제출되었습니다. 평가가 진행 중입니다.',
+          studentId: 123,
+          studentName: '홍길동',
+          status: 'COMPLETED',
+          message: null,
+          score: 8,
+          feedback: 'Great organization, minor grammar issues.',
+          highlights: ['I like school.', 'pizza'],
+          submitText: 'Hello my name is ...',
+          highlightSubmitText:
+            'Hello my name is ... <b>I like school.</b> I love <b>pizza</b>.',
+          videoUrl: 'https://...sas.mp4',
+          audioUrl: 'https://...sas.mp3',
+          apiLatency: 1432,
         },
       },
     },
@@ -154,6 +164,66 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
+  // 401 Unauthorized
+
+  UNAUTHORIZED: {
+    status: 401,
+    description: 'Invalid credentials',
+    schema: {
+      example: {
+        result: 'error',
+        message: '사용자를 찾을 수 없습니다',
+      },
+    },
+  },
+
+  AUTHENTICATION_REQUIRED: {
+    status: 401,
+    description: '인증 실패',
+    schema: {
+      example: {
+        result: 'failed',
+        message: ['로그인이 필요합니다.'],
+      },
+    },
+  },
+
+  // 404 Not Found
+  ESSAY_NOT_FOUND: {
+    status: 404,
+    description: '에세이를 찾을 수 없음',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '해당 에세이를 찾을 수 없습니다.',
+      },
+    },
+  },
+
+  // 409 Conflict
+
+  CONFLICT: {
+    status: 409,
+    description: 'Conflict - Student already exists',
+    schema: {
+      example: {
+        result: 'error',
+        message: '이미 존재하는 이메일입니다',
+      },
+    },
+  },
+
+  ESSAY_ALREADY_SUBMITTED: {
+    status: 409,
+    description: '이미 해당 유형의 에세이를 제출함',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '이미 writing 유형의 에세이를 제출했습니다.',
+      },
+    },
+  },
+
   // 동시 제출 에러
   CONCURRENT_SUBMISSION: {
     status: 409,
@@ -220,66 +290,6 @@ export const API_RESPONSE_SCHEMAS = {
       example: {
         result: 'failed',
         message: 'AI 서비스 인증에 실패했습니다. 관리자에게 문의하세요.',
-      },
-    },
-  },
-
-  // 401 Unauthorized
-
-  UNAUTHORIZED: {
-    status: 401,
-    description: 'Invalid credentials',
-    schema: {
-      example: {
-        result: 'error',
-        message: '사용자를 찾을 수 없습니다',
-      },
-    },
-  },
-
-  AUTHENTICATION_REQUIRED: {
-    status: 401,
-    description: '인증 실패',
-    schema: {
-      example: {
-        result: 'failed',
-        message: ['로그인이 필요합니다.'],
-      },
-    },
-  },
-
-  // 404 Not Found
-  ESSAY_NOT_FOUND: {
-    status: 404,
-    description: '에세이를 찾을 수 없음',
-    schema: {
-      example: {
-        result: 'failed',
-        message: '해당 에세이를 찾을 수 없습니다.',
-      },
-    },
-  },
-
-  // 409 Conflict
-
-  CONFLICT: {
-    status: 409,
-    description: 'Conflict - Student already exists',
-    schema: {
-      example: {
-        result: 'error',
-        message: '이미 존재하는 이메일입니다',
-      },
-    },
-  },
-
-  ESSAY_ALREADY_SUBMITTED: {
-    status: 409,
-    description: '이미 해당 유형의 에세이를 제출함',
-    schema: {
-      example: {
-        result: 'failed',
-        message: '이미 writing 유형의 에세이를 제출했습니다.',
       },
     },
   },

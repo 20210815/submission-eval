@@ -4,12 +4,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
-import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  app.use(cookieParser());
   app.useLogger(app.get(Logger));
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalFilters(new HttpExceptionFilter());
@@ -20,15 +18,7 @@ async function bootstrap() {
       'API for managing students with authentication and essay evaluation',
     )
     .setVersion('1.0')
-    .addCookieAuth(
-      'token',
-      {
-        type: 'apiKey',
-        in: 'cookie',
-        name: 'token',
-      },
-      'token',
-    )
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

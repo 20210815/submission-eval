@@ -17,7 +17,7 @@ import {
   ApiResponse,
   ApiConsumes,
   ApiBody,
-  ApiCookieAuth,
+  ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
@@ -37,14 +37,14 @@ import {
 import { KoreanParseIntPipe } from '../common/pipes/korean-parse-int.pipe';
 
 @ApiTags('Essays')
-@ApiCookieAuth('token')
+@ApiBearerAuth()
 @Controller('essays')
 @UseGuards(JwtAuthGuard)
 export class EssaysController {
   constructor(private readonly essaysService: EssaysService) {}
 
   @Post('submit')
-  @ApiCookieAuth('token')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: '에세이 제출',
     description:
@@ -109,7 +109,7 @@ export class EssaysController {
   }
 
   @Get(':id')
-  @ApiCookieAuth('token')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: '에세이 조회',
     description: '특정 에세이의 상세 정보를 조회합니다.',
@@ -153,7 +153,7 @@ export class EssaysController {
   }
 
   @Get()
-  @ApiCookieAuth('token')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: '학생 에세이 목록 조회',
     description: '현재 로그인한 학생의 모든 에세이 목록을 조회합니다.',

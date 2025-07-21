@@ -11,6 +11,7 @@ import {
   LogType,
   LogStatus,
 } from './entities/evaluation-log.entity';
+import { Student } from '../students/entities/student.entity';
 import { SubmitEssayDto } from './dto/submit-essay.dto';
 import {
   EssayResponseDto,
@@ -42,6 +43,8 @@ export class EssaysService {
     private readonly essayRepository: Repository<Essay>,
     @InjectRepository(EvaluationLog)
     private readonly evaluationLogRepository: Repository<EvaluationLog>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
     private readonly videoProcessingService: VideoProcessingService,
     private readonly azureStorageService: AzureStorageService,
     private readonly openAIService: OpenAIService,
@@ -54,6 +57,8 @@ export class EssaysService {
     dto: SubmitEssayDto,
     videoFile?: Express.Multer.File,
   ): Promise<SubmitEssayResponseDto> {
+    const startTime = Date.now();
+
     // 동시 제출 방지 체크
     if (this.processingStudents.has(studentId)) {
       throw new ConflictException(
@@ -89,22 +94,42 @@ export class EssaysService {
 
       const savedEssay = await this.essayRepository.save(essay);
 
-      // 비동기 평가 프로세스 시작 (await 없이)
-      void this.processEssayEvaluation(savedEssay.id, videoFile).catch(
-        (error) => {
-          console.error('Essay evaluation failed:', error);
-          void this.updateEssayStatus(
-            savedEssay.id,
-            EvaluationStatus.FAILED,
-            error instanceof Error ? error.message : 'Unknown error',
-          );
-        },
-      );
+      // 동기 평가 프로세스 실행 (await로 완료까지 기다림)
+      await this.processEssayEvaluation(savedEssay.id, videoFile);
+
+      // 평가 완료 후 결과 조회
+      const evaluatedEssay = await this.essayRepository.findOne({
+        where: { id: savedEssay.id },
+      });
+
+      if (!evaluatedEssay) {
+        throw new Error('평가된 에세이를 찾을 수 없습니다.');
+      }
+
+      // 학생 정보 조회
+      const student = await this.studentRepository.findOne({
+        where: { id: studentId },
+      });
+
+      const apiLatency = Date.now() - startTime;
 
       return {
-        essayId: savedEssay.id,
-        status: EvaluationStatus.PENDING,
-        message: '에세이가 성공적으로 제출되었습니다. 평가가 진행 중입니다.',
+        essayId: evaluatedEssay.id,
+        studentId: studentId,
+        studentName: student?.name,
+        status: evaluatedEssay.status,
+        message:
+          evaluatedEssay.status === EvaluationStatus.COMPLETED
+            ? null
+            : evaluatedEssay.errorMessage || '에세이 평가에 실패했습니다.',
+        score: evaluatedEssay.score ?? undefined,
+        feedback: evaluatedEssay.feedback ?? undefined,
+        highlights: evaluatedEssay.highlights ?? undefined,
+        submitText: evaluatedEssay.submitText,
+        highlightSubmitText: evaluatedEssay.highlightSubmitText ?? undefined,
+        videoUrl: evaluatedEssay.videoUrl ?? undefined,
+        audioUrl: evaluatedEssay.audioUrl ?? undefined,
+        apiLatency,
       };
     } finally {
       // 처리 완료 후 학생 ID 제거

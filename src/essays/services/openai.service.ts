@@ -21,14 +21,15 @@ export class OpenAIService {
   private readonly apiKey: string;
   private readonly endpoint: string;
   private readonly deploymentName: string;
+  private readonly apiVersion: string;
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('AZURE_ENDPOINT_KEY') || '';
     this.endpoint = this.configService.get<string>('AZURE_ENDPOINT_URL') || '';
-    this.deploymentName = this.configService.get<string>(
-      'AZURE_OPENAI_DEPLOYMENT_NAME',
-      'gpt-4',
-    );
+    this.deploymentName =
+      this.configService.get<string>('AZURE_OPENAI_DEPLOYMENT_NAME') || '';
+    this.apiVersion =
+      this.configService.get<string>('OPENAPI_API_VERSION') || '';
 
     if (!this.apiKey || !this.endpoint) {
       throw new Error('Azure OpenAI configuration is missing');
@@ -73,36 +74,41 @@ export class OpenAIService {
     componentType: string,
   ): string {
     return `
-You are an expert English language evaluator. Please evaluate the following ${componentType} essay and provide feedback.
+    You are an expert English language evaluator. Please evaluate the following ${componentType} essay and provide feedback.
 
-Title: ${title}
-Essay Content: ${submitText}
+    Title: ${title}
+    Essay Content: ${submitText}
 
-Please provide your evaluation in the following JSON format:
-{
-  "score": <number between 0-100>,
-  "feedback": "<detailed feedback in Korean>",
-  "highlights": ["<important phrase 1>", "<important phrase 2>", ...]
-}
+    Please provide your evaluation in the following JSON format:
+    {
+      "score": <number between 0-10>,
+      "feedback": "<detailed feedback in Korean>",
+      "highlights": ["<important phrase 1>", "<important phrase 2>", ...]
+    }
 
-Evaluation Criteria:
-- Grammar and sentence structure
-- Vocabulary usage and variety
-- Content organization and coherence
-- Relevance to the topic
-- Overall communication effectiveness
+    Evaluation Criteria:
+    - Grammar and sentence structure
+    - Vocabulary usage and variety
+    - Content organization and coherence
+    - Relevance to the topic
+    - Overall communication effectiveness
 
-The highlights should contain key phrases or sentences that demonstrate good language use or areas that need improvement.
-Provide feedback in Korean language.
-`;
+    The highlights should contain key phrases or sentences that demonstrate good language use or areas that need improvement.
+    Provide feedback in Korean language.
+    `;
   }
 
   private async callOpenAI(prompt: string): Promise<string> {
-    const apiVersion = this.configService.get<string>(
-      'OPENAPI_API_VERSION',
-      '2023-05-15',
-    );
-    const url = `${this.endpoint}/openai/deployments/${this.deploymentName}/chat/completions?api-version=${apiVersion}`;
+    // 환경 변수 가져오기
+    if (
+      !this.apiKey ||
+      !this.endpoint ||
+      !this.deploymentName ||
+      !this.apiVersion
+    ) {
+      throw new Error('Azure OpenAI configuration is incomplete');
+    }
+    const url = `${this.endpoint}/openai/deployments/${this.deploymentName}/chat/completions?api-version=${this.apiVersion}`;
 
     const headers = {
       'Content-Type': 'application/json',
@@ -165,8 +171,8 @@ Provide feedback in Korean language.
       }
 
       // 점수 범위 검증
-      if (parsed.score < 0 || parsed.score > 100) {
-        throw new Error('Score must be between 0 and 100');
+      if (parsed.score < 0 || parsed.score > 10) {
+        throw new Error('Score must be between 0 and 10');
       }
 
       return {
@@ -178,16 +184,12 @@ Provide feedback in Korean language.
         ),
       };
     } catch (error) {
-      // 파싱 실패 시 기본값 반환
+      // 파싱 실패 시 예외 던지기
       console.error(
         'AI response parsing failed:',
         error instanceof Error ? error.message : 'Unknown error',
       );
-      return {
-        score: 0,
-        feedback: 'AI 평가 중 오류가 발생했습니다. 다시 시도해주세요.',
-        highlights: [],
-      };
+      throw new Error('AI 평가 중 오류가 발생했습니다. 다시 시도해주세요.');
     }
   }
 }
