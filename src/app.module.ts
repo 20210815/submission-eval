@@ -35,7 +35,8 @@ import { AppService } from './app.service';
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
       entities: [__dirname + '/**/*.entity.{ts,js}'],
-      synchronize: true,
+      synchronize: process.env.NODE_ENV !== 'production', // 프로덕션에서는 동기화 비활성화
+      logging: process.env.NODE_ENV === 'development' ? true : ['error'], // 개발환경에서만 전체 로깅
     }),
   ],
   controllers: [AppController],

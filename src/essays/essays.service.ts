@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Essay, EvaluationStatus } from './entities/essay.entity';
 import {
   EvaluationLog,
@@ -45,6 +45,7 @@ export class EssaysService {
     private readonly evaluationLogRepository: Repository<EvaluationLog>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    private readonly dataSource: DataSource,
     private readonly videoProcessingService: VideoProcessingService,
     private readonly azureStorageService: AzureStorageService,
     private readonly openAIService: OpenAIService,
@@ -68,9 +69,10 @@ export class EssaysService {
 
     this.processingStudents.add(studentId);
 
-    try {
+    // 트랜잭션 내에서 에세이 생성 및 초기 처리
+    const savedEssay = await this.dataSource.transaction(async (manager) => {
       // componentType별 중복 제출 방지 체크
-      const existingEssay = await this.essayRepository.findOne({
+      const existingEssay = await manager.findOne(Essay, {
         where: {
           studentId,
           componentType: dto.componentType,
@@ -84,7 +86,7 @@ export class EssaysService {
       }
 
       // 새 에세이 생성
-      const essay = this.essayRepository.create({
+      const essay = manager.create(Essay, {
         title: dto.title,
         submitText: dto.submitText,
         componentType: dto.componentType,
@@ -92,9 +94,11 @@ export class EssaysService {
         status: EvaluationStatus.PENDING,
       });
 
-      const savedEssay = await this.essayRepository.save(essay);
+      return await manager.save(Essay, essay);
+    });
 
-      // 동기 평가 프로세스 실행 (await로 완료까지 기다림)
+    try {
+      // 동기 평가 프로세스 실행 (트랜잭션 외부에서 실행)
       await this.processEssayEvaluation(savedEssay.id, videoFile);
 
       // 평가 완료 후 결과 조회

@@ -72,30 +72,28 @@ describe('EssaysService (e2e)', () => {
   });
 
   afterAll(async () => {
-    // 테스트 데이터 정리 - CASCADE를 사용하여 외래키 제약조건 해결
+    // 테스트 데이터 정리 - FK 제약조건 순서 준수
     const dataSource = app.get(DataSource);
-    await dataSource.query(
-      'TRUNCATE TABLE evaluation_logs, essays, students RESTART IDENTITY CASCADE',
-    );
+    await dataSource.transaction(async (manager) => {
+      await manager.query('DELETE FROM evaluation_logs');
+      await manager.query('DELETE FROM essays');
+      await manager.query('DELETE FROM students');
+      await manager.query('ALTER SEQUENCE students_id_seq RESTART WITH 1');
+      await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
+      await manager.query('ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1');
+    });
     await app.close();
   });
 
-  beforeEach(async () => {
-    // 각 테스트 전에 에세이와 로그 데이터 정리
+  afterEach(async () => {
+    // 각 테스트 후에 에세이와 로그 데이터 정리 - FK 제약조건 순서 준수
     const dataSource = app.get(DataSource);
     await dataSource.transaction(async (manager) => {
-      // 순서대로 정리: 참조 테이블 먼저, 피참조 테이블 나중에
-      await manager.query('TRUNCATE TABLE evaluation_logs RESTART IDENTITY CASCADE');
-      await manager.query('TRUNCATE TABLE essays RESTART IDENTITY CASCADE');
+      await manager.query('DELETE FROM evaluation_logs');
+      await manager.query('DELETE FROM essays');
+      await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
+      await manager.query('ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1');
     });
-    
-    // 매번 새로운 테스트 학생 생성하여 FK 제약조건 문제 방지
-    const student = studentRepository.create({
-      name: '테스트 학생',
-      email: `test-${Date.now()}-${Math.random()}@example.com`,
-      password: 'hashedpassword',
-    });
-    testStudent = await studentRepository.save(student);
   });
 
   describe('submitEssay', () => {

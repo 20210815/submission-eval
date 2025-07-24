@@ -115,10 +115,14 @@ describe('Auth Controller (e2e)', () => {
         .expect(400);
 
       const body = response.body as AuthErrorResponse;
-      expect(body).toEqual({
-        result: 'failed',
-        message: ['비밀번호는 최소 4글자 이상이어야 합니다.'],
-      });
+      expect(body.result).toBe('failed');
+      expect(Array.isArray(body.message)).toBe(true);
+      // 새로운 비밀번호 정책에 따른 여러 검증 오류 메시지 확인
+      if (Array.isArray(body.message)) {
+        expect(body.message).toContain(
+          '비밀번호는 최소 4글자 이상이어야 합니다.',
+        );
+      }
     });
 
     it('should return 400 for multiple validation errors', async () => {

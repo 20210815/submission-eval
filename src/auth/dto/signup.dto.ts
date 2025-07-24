@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsNotEmpty, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SignupDto {
@@ -13,12 +13,15 @@ export class SignupDto {
   email: string;
 
   @ApiProperty({
-    example: 'password123',
-    description: 'Student password',
-    minLength: 4,
+    example: 'Password123!',
+    description: 'Student password (minimum 8 characters, must contain uppercase, lowercase, number, and special character)',
+    minLength: 8,
   })
   @IsString()
-  @MinLength(4, { message: '비밀번호는 최소 4글자 이상이어야 합니다.' })
+  @MinLength(8, { message: '비밀번호는 최소 8글자 이상이어야 합니다.' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
+    message: '비밀번호는 대문자, 소문자, 숫자, 특수문자를 포함해야 합니다.',
+  })
   @IsNotEmpty({ message: '비밀번호는 필수입니다.' })
   password: string;
 }

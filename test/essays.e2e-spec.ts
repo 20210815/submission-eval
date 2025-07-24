@@ -77,19 +77,32 @@ describe('Essays (e2e)', () => {
   });
 
   afterAll(async () => {
-    // 테스트 데이터 정리 - CASCADE를 사용하여 외래키 제약조건 해결
+    // 테스트 데이터 정리 - 올바른 순서로 삭제하여 FK 제약조건 해결
     const dataSource = app.get(DataSource);
-    await dataSource.query(
-      'TRUNCATE TABLE essays, students RESTART IDENTITY CASCADE',
-    );
+    await dataSource.transaction(async (manager) => {
+      // evaluation_logs 먼저 삭제
+      await manager.query('DELETE FROM evaluation_logs');
+      // essays 다음 삭제
+      await manager.query('DELETE FROM essays');
+      // students 마지막 삭제
+      await manager.query('DELETE FROM students');
+      // 시퀀스 재설정
+      await manager.query('ALTER SEQUENCE students_id_seq RESTART WITH 1');
+      await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
+      await manager.query('ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1');
+    });
     await app.close();
   });
 
   afterEach(async () => {
-    // 각 테스트 후 에세이 데이터 정리
+    // 각 테스트 후 에세이 데이터 정리 - FK 제약조건 순서 준수
     const dataSource = app.get(DataSource);
     await dataSource.transaction(async (manager) => {
-      await manager.query('TRUNCATE TABLE essays RESTART IDENTITY CASCADE');
+      // evaluation_logs 먼저 삭제 후 essays 삭제
+      await manager.query('DELETE FROM evaluation_logs');
+      await manager.query('DELETE FROM essays');
+      await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
+      await manager.query('ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1');
     });
   });
 
@@ -353,7 +366,8 @@ describe('Essays (e2e)', () => {
       expect(responseBody.result).toBe('failed');
       expect(responseBody.message).toContain('찾을 수 없습니다');
 
-      // 테스트 후 정리
+      // 테스트 후 정리 - FK 제약조건 순서 준수
+      await essayRepository.delete({ studentId: savedOtherStudent.id });
       await studentRepository.delete(savedOtherStudent.id);
     });
 
@@ -440,9 +454,8 @@ describe('Essays (e2e)', () => {
     });
 
     it('should return empty array for student with no essays', async () => {
-      // FK 제약조건 때문에 evaluation_logs 먼저 삭제하고 essays 삭제
-      await essayRepository.manager.query('TRUNCATE TABLE evaluation_logs RESTART IDENTITY CASCADE');
-      await essayRepository.clear();
+      // 현재 학생의 에세이만 삭제 (CASCADE로 evaluation_logs도 함께 삭제됨)
+      await essayRepository.delete({ studentId });
 
       const response = await request(app.getHttpServer())
         .get('/v1/submissions')
@@ -487,7 +500,8 @@ describe('Essays (e2e)', () => {
         expect(essay.title).not.toBe('다른 학생의 에세이');
       });
 
-      // 테스트 후 정리
+      // 테스트 후 정리 - FK 제약조건 순서 준수
+      await essayRepository.delete({ studentId: savedOtherStudent.id });
       await studentRepository.delete(savedOtherStudent.id);
     });
   });

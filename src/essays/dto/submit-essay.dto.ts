@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString, MaxLength, Length } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { ComponentType } from '../entities/essay.entity';
@@ -17,13 +17,15 @@ export class SubmitEssayDto {
   title: string;
 
   @ApiProperty({
-    description: '에세이 본문 내용 (필수)',
+    description: '에세이 본문 내용 (필수, 최대 10,000자)',
     example: 'This is my essay about English language learning...',
     required: true,
+    maxLength: 10000,
   })
   @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
   @IsString({ message: '에세이 내용은 문자열이어야 합니다.' })
   @IsNotEmpty({ message: '에세이 내용은 필수입니다.' })
+  @Length(10, 10000, { message: '에세이 내용은 10자 이상 10,000자 이하여야 합니다.' })
   submitText: string;
 
   @ApiProperty({
