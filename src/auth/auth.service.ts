@@ -10,8 +10,6 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { ResponseUtil } from '../common/utils/response.util';
-import { FutureApiResponse } from '../common/interfaces/api-response.interface';
 
 @Injectable()
 export class AuthService {
@@ -21,7 +19,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signup(dto: SignupDto): Promise<FutureApiResponse> {
+  async signup(
+    dto: SignupDto,
+  ): Promise<{ result: 'ok'; message: string; studentId: number }> {
     const existing = await this.studentRepo.findOne({
       where: { email: dto.email },
     });
@@ -37,15 +37,17 @@ export class AuthService {
     });
     await this.studentRepo.save(student);
 
-    return ResponseUtil.createFutureApiResponse(
-      '회원가입에 성공했습니다',
-      student.id,
-    );
+    return {
+      result: 'ok' as const,
+      message: '회원가입에 성공했습니다',
+      studentId: student.id,
+    };
   }
 
-  async login(
-    dto: LoginDto,
-  ): Promise<{ response: FutureApiResponse; accessToken: string }> {
+  async login(dto: LoginDto): Promise<{
+    response: { result: 'ok'; message: string; studentId: number };
+    accessToken: string;
+  }> {
     const student = await this.studentRepo.findOne({
       where: { email: dto.email },
     });
@@ -59,10 +61,11 @@ export class AuthService {
     const token = await this.jwtService.signAsync(payload);
 
     return {
-      response: ResponseUtil.createFutureApiResponse(
-        '로그인에 성공했습니다',
-        student.id,
-      ),
+      response: {
+        result: 'ok' as const,
+        message: '로그인에 성공했습니다',
+        studentId: student.id,
+      },
       accessToken: token,
     };
   }

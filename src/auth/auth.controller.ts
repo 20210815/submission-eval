@@ -36,7 +36,15 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { response, accessToken } = await this.authService.login(dto);
-    res.header('Authorization', `Bearer ${accessToken}`);
+
+    // Set JWT token as httpOnly cookie
+    res.cookie('token', accessToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
+
     return response;
   }
 }

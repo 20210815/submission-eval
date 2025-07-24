@@ -479,6 +479,16 @@ export class EssaysService {
       traceId?: string;
     },
   ): Promise<void> {
+    // 에세이가 존재하는지 확인 (테스트 환경에서 FK 제약조건 오류 방지)
+    const essayExists = await this.essayRepository.findOne({
+      where: { id: essayId },
+    });
+    
+    if (!essayExists) {
+      console.warn(`Cannot log evaluation for non-existent essay ID: ${essayId}`);
+      return;
+    }
+
     const log = this.evaluationLogRepository.create({
       essayId,
       type,

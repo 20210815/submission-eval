@@ -24,7 +24,8 @@
       "Bash(npm test:*)",
       "Bash(npx tsc:*)",
       "Bash(node:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

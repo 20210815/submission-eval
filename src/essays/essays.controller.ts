@@ -9,6 +9,8 @@ import {
   UploadedFile,
   Req,
   HttpCode,
+  BadRequestException,
+  ValidationPipe,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -70,7 +72,7 @@ export class EssaysController {
       },
       fileFilter: (req, file, callback) => {
         if (!file.mimetype.includes('video')) {
-          return callback(new Error('비디오 파일만 업로드 가능합니다.'), false);
+          return callback(new BadRequestException('비디오 파일만 업로드 가능합니다.'), false);
         }
         callback(null, true);
       },
@@ -91,6 +93,15 @@ export class EssaysController {
         );
       }
 
+      // Manual validation for empty required fields
+      if (!dto.title || dto.title.trim() === '') {
+        throw new BadRequestException('제목은 필수입니다.');
+      }
+
+      if (!dto.submitText || dto.submitText.trim() === '') {
+        throw new BadRequestException('에세이 내용은 필수입니다.');
+      }
+
       const result = await this.essaysService.submitEssay(
         studentId,
         dto,
@@ -102,6 +113,11 @@ export class EssaysController {
         result,
       );
     } catch (error: unknown) {
+      // Re-throw HTTP exceptions to let the exception filter handle them
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
       const errorMessage =
         error instanceof Error ? error.message : '에세이 제출에 실패했습니다.';
 

@@ -6,7 +6,6 @@ import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/filters/http-exception.filter';
 import { DataSource } from 'typeorm';
-import { Student } from '../src/students/entities/student.entity';
 
 // 응답 타입 정의
 interface AuthSuccessResponse {
@@ -29,14 +28,12 @@ describe('Auth Controller (e2e)', () => {
     email: 'test@example.com',
     password: 'Test123!@#',
     name: '테스트유저',
-    studentNumber: '2021001234',
   };
 
   const invalidUser = {
     email: 'invalid-email',
     password: '123',
     name: '',
-    studentNumber: '',
   };
 
   beforeAll(async () => {
@@ -60,22 +57,27 @@ describe('Auth Controller (e2e)', () => {
   afterAll(async () => {
     // 테스트 데이터 정리
     if (dataSource) {
-      await dataSource.getRepository(Student).delete({ email: testUser.email });
+      await dataSource.query(
+        'TRUNCATE TABLE students RESTART IDENTITY CASCADE',
+      );
     }
     await app.close();
   });
 
   beforeEach(async () => {
-    // 각 테스트 전에 테스트 유저 정리
+    // 각 테스트 전에 모든 학생 데이터 정리
     if (dataSource) {
-      await dataSource.getRepository(Student).delete({ email: testUser.email });
+      // 트랜잭션을 사용하여 안전하게 정리
+      await dataSource.transaction(async (manager) => {
+        await manager.query('TRUNCATE TABLE students RESTART IDENTITY CASCADE');
+      });
     }
   });
 
   describe('POST /auth/signup', () => {
     it('should successfully register a new student', async () => {
       const response = await request(httpServer)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send(testUser)
         .expect(201);
 
@@ -89,7 +91,7 @@ describe('Auth Controller (e2e)', () => {
 
     it('should return 400 for invalid email format', async () => {
       const response = await request(httpServer)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send({
           ...testUser,
           email: 'invalid-email',
@@ -98,14 +100,14 @@ describe('Auth Controller (e2e)', () => {
 
       const body = response.body as AuthErrorResponse;
       expect(body).toEqual({
-        result: 'error',
+        result: 'failed',
         message: ['이메일 형식이 올바르지 않습니다'],
       });
     });
 
     it('should return 400 for short password', async () => {
       const response = await request(httpServer)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send({
           ...testUser,
           password: '123',
@@ -114,19 +116,19 @@ describe('Auth Controller (e2e)', () => {
 
       const body = response.body as AuthErrorResponse;
       expect(body).toEqual({
-        result: 'error',
+        result: 'failed',
         message: ['비밀번호는 최소 4글자 이상이어야 합니다.'],
       });
     });
 
     it('should return 400 for multiple validation errors', async () => {
       const response = await request(httpServer)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send(invalidUser)
         .expect(400);
 
       const body = response.body as AuthErrorResponse;
-      expect(body.result).toBe('error');
+      expect(body.result).toBe('failed');
       expect(Array.isArray(body.message)).toBe(true);
       if (Array.isArray(body.message)) {
         expect(body.message.length).toBeGreaterThan(1);
@@ -137,29 +139,32 @@ describe('Auth Controller (e2e)', () => {
 
     it('should return 409 for duplicate email', async () => {
       // 첫 번째 회원가입
-      await request(httpServer).post('/auth/signup').send(testUser).expect(201);
+      await request(httpServer)
+        .post('/v1/auth/signup')
+        .send(testUser)
+        .expect(201);
 
       // 동일한 이메일로 두 번째 회원가입 시도
       const response = await request(httpServer)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send(testUser)
         .expect(409);
 
       const body = response.body as AuthErrorResponse;
       expect(body).toEqual({
-        result: 'error',
+        result: 'failed',
         message: ['이미 존재하는 이메일입니다'],
       });
     });
 
     it('should return 400 for empty required fields', async () => {
       const response = await request(httpServer)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send({})
         .expect(400);
 
       const body = response.body as AuthErrorResponse;
-      expect(body.result).toBe('error');
+      expect(body.result).toBe('failed');
       expect(Array.isArray(body.message)).toBe(true);
     });
   });
@@ -167,12 +172,12 @@ describe('Auth Controller (e2e)', () => {
   describe('POST /auth/login', () => {
     beforeEach(async () => {
       // 각 로그인 테스트 전에 테스트 유저 생성
-      await request(httpServer).post('/auth/signup').send(testUser);
+      await request(httpServer).post('/v1/auth/signup').send(testUser);
     });
 
     it('should successfully login with valid credentials', async () => {
       const response = await request(httpServer)
-        .post('/auth/login')
+        .post('/v1/auth/login')
         .send({
           email: testUser.email,
           password: testUser.password,
@@ -198,7 +203,7 @@ describe('Auth Controller (e2e)', () => {
 
     it('should return 401 for invalid email', async () => {
       const response = await request(httpServer)
-        .post('/auth/login')
+        .post('/v1/auth/login')
         .send({
           email: 'nonexistent@example.com',
           password: testUser.password,
@@ -207,14 +212,14 @@ describe('Auth Controller (e2e)', () => {
 
       const body = response.body as AuthErrorResponse;
       expect(body).toEqual({
-        result: 'error',
+        result: 'failed',
         message: ['사용자를 찾을 수 없습니다'],
       });
     });
 
     it('should return 401 for invalid password', async () => {
       const response = await request(httpServer)
-        .post('/auth/login')
+        .post('/v1/auth/login')
         .send({
           email: testUser.email,
           password: 'wrongpassword',
@@ -223,14 +228,14 @@ describe('Auth Controller (e2e)', () => {
 
       const body = response.body as AuthErrorResponse;
       expect(body).toEqual({
-        result: 'error',
+        result: 'failed',
         message: ['비밀번호가 일치하지 않습니다'],
       });
     });
 
     it('should return 400 for invalid email format in login', async () => {
       const response = await request(httpServer)
-        .post('/auth/login')
+        .post('/v1/auth/login')
         .send({
           email: 'invalid-email',
           password: testUser.password,
@@ -238,24 +243,24 @@ describe('Auth Controller (e2e)', () => {
         .expect(400);
 
       const body = response.body as AuthErrorResponse;
-      expect(body.result).toBe('error');
+      expect(body.result).toBe('failed');
       expect(Array.isArray(body.message)).toBe(true);
     });
 
     it('should return 400 for missing credentials', async () => {
       const response = await request(httpServer)
-        .post('/auth/login')
+        .post('/v1/auth/login')
         .send({})
         .expect(400);
 
       const body = response.body as AuthErrorResponse;
-      expect(body.result).toBe('error');
+      expect(body.result).toBe('failed');
       expect(Array.isArray(body.message)).toBe(true);
     });
 
     it('should set httpOnly cookie with correct attributes', async () => {
       const response = await request(httpServer)
-        .post('/auth/login')
+        .post('/v1/auth/login')
         .send({
           email: testUser.email,
           password: testUser.password,
@@ -279,7 +284,7 @@ describe('Auth Controller (e2e)', () => {
     it('should complete full signup and login flow', async () => {
       // 1. 회원가입
       const signupResponse = await request(httpServer)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send(testUser)
         .expect(201);
 
@@ -288,7 +293,7 @@ describe('Auth Controller (e2e)', () => {
 
       // 2. 로그인
       const loginResponse = await request(httpServer)
-        .post('/auth/login')
+        .post('/v1/auth/login')
         .send({
           email: testUser.email,
           password: testUser.password,
@@ -312,8 +317,8 @@ describe('Auth Controller (e2e)', () => {
   describe('Edge Cases', () => {
     it('should handle concurrent signup attempts with same email', async () => {
       const promises = [
-        request(httpServer).post('/auth/signup').send(testUser),
-        request(httpServer).post('/auth/signup').send(testUser),
+        request(httpServer).post('/v1/auth/signup').send(testUser),
+        request(httpServer).post('/v1/auth/signup').send(testUser),
       ];
 
       const responses = await Promise.allSettled(promises);
@@ -334,17 +339,16 @@ describe('Auth Controller (e2e)', () => {
       const longString = 'a'.repeat(1000);
 
       const response = await request(httpServer)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send({
           email: `${longString}@example.com`,
           password: longString,
           name: longString,
-          studentNumber: longString,
         })
         .expect(400);
 
       const body = response.body as AuthErrorResponse;
-      expect(body.result).toBe('error');
+      expect(body.result).toBe('failed');
     });
   });
 });

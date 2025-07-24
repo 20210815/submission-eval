@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { EssaysService } from '../src/essays/essays.service';
@@ -62,27 +62,40 @@ describe('EssaysService (e2e)', () => {
     );
     notificationService = module.get<NotificationService>(NotificationService);
 
-    // 테스트용 학생 생성
+    // 테스트용 학생 생성 - 유니크 이메일 사용
     const student = studentRepository.create({
       name: '테스트 학생',
-      email: 'test@example.com',
+      email: `test-${Date.now()}-${Math.random()}@example.com`,
       password: 'hashedpassword',
     });
     testStudent = await studentRepository.save(student);
   });
 
   afterAll(async () => {
-    // 테스트 데이터 정리
-    await evaluationLogRepository.delete({});
-    await essayRepository.delete({});
-    await studentRepository.delete({});
+    // 테스트 데이터 정리 - CASCADE를 사용하여 외래키 제약조건 해결
+    const dataSource = app.get(DataSource);
+    await dataSource.query(
+      'TRUNCATE TABLE evaluation_logs, essays, students RESTART IDENTITY CASCADE',
+    );
     await app.close();
   });
 
   beforeEach(async () => {
     // 각 테스트 전에 에세이와 로그 데이터 정리
-    await evaluationLogRepository.delete({});
-    await essayRepository.delete({});
+    const dataSource = app.get(DataSource);
+    await dataSource.transaction(async (manager) => {
+      // 순서대로 정리: 참조 테이블 먼저, 피참조 테이블 나중에
+      await manager.query('TRUNCATE TABLE evaluation_logs RESTART IDENTITY CASCADE');
+      await manager.query('TRUNCATE TABLE essays RESTART IDENTITY CASCADE');
+    });
+    
+    // 매번 새로운 테스트 학생 생성하여 FK 제약조건 문제 방지
+    const student = studentRepository.create({
+      name: '테스트 학생',
+      email: `test-${Date.now()}-${Math.random()}@example.com`,
+      password: 'hashedpassword',
+    });
+    testStudent = await studentRepository.save(student);
   });
 
   describe('submitEssay', () => {
@@ -268,6 +281,23 @@ describe('EssaysService (e2e)', () => {
     });
 
     it('should handle OpenAI service failure', async () => {
+      // 테스트 학생이 존재하는지 확인하고 없으면 새로 생성
+      let studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id }
+      });
+      
+      if (!studentExists) {
+        const student = studentRepository.create({
+          name: '테스트 학생',
+          email: `test-${Date.now()}-${Math.random()}@example.com`,
+          password: 'hashedpassword',
+        });
+        testStudent = await studentRepository.save(student);
+        studentExists = testStudent;
+      }
+      
+      expect(studentExists).toBeTruthy();
+
       jest
         .spyOn(openAIService, 'evaluateEssay')
         .mockRejectedValue(new Error('OpenAI API Error'));
@@ -292,6 +322,23 @@ describe('EssaysService (e2e)', () => {
     });
 
     it('should handle video processing failure', async () => {
+      // 테스트 학생이 존재하는지 확인하고 없으면 새로 생성
+      let studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id }
+      });
+      
+      if (!studentExists) {
+        const student = studentRepository.create({
+          name: '테스트 학생',
+          email: `test-${Date.now()}-${Math.random()}@example.com`,
+          password: 'hashedpassword',
+        });
+        testStudent = await studentRepository.save(student);
+        studentExists = testStudent;
+      }
+      
+      expect(studentExists).toBeTruthy();
+
       jest
         .spyOn(videoProcessingService, 'processVideo')
         .mockRejectedValue(new Error('Video processing failed'));
@@ -320,6 +367,9 @@ describe('EssaysService (e2e)', () => {
     });
 
     it('should handle azure storage failure', async () => {
+      // beforeEach에서 생성된 testStudent 사용
+      expect(testStudent).toBeTruthy();
+
       jest
         .spyOn(azureStorageService, 'uploadVideo')
         .mockRejectedValue(new Error('Azure storage upload failed'));
@@ -500,8 +550,7 @@ describe('EssaysService (e2e)', () => {
         expect(essay.title).not.toBe('다른 학생의 에세이');
       });
 
-      // 테스트 후 정리
-      await studentRepository.delete(savedOtherStudent.id);
+      // 테스트 후 정리는 afterAll에서 처리됨
     });
   });
 
@@ -509,6 +558,10 @@ describe('EssaysService (e2e)', () => {
     let testEssay: Essay;
 
     beforeEach(async () => {
+      // testStudent가 확실히 존재하는지 확인
+      expect(testStudent).toBeTruthy();
+      expect(testStudent.id).toBeDefined();
+      
       const essay = essayRepository.create({
         title: '로그 테스트 에세이',
         submitText: '로그 테스트 내용',
@@ -517,6 +570,10 @@ describe('EssaysService (e2e)', () => {
         status: EvaluationStatus.PENDING,
       });
       testEssay = await essayRepository.save(essay);
+      
+      // testEssay가 제대로 저장되었는지 확인
+      expect(testEssay).toBeTruthy();
+      expect(testEssay.id).toBeDefined();
     });
 
     it('should create evaluation log successfully', async () => {
