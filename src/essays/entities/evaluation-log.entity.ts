@@ -58,7 +58,7 @@ export class EvaluationLog extends BaseEntity {
   @Column({ type: 'varchar', length: 100, nullable: true })
   traceId: string;
 
-  @ManyToOne(() => Essay, { nullable: false })
+  @ManyToOne(() => Essay, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'essay_id' })
   essay: Essay;
 

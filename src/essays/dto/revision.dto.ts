@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ComponentType } from '../entities/essay.entity';
+import { ComponentType } from '../enums/component-type.enum';
 import { RevisionStatus } from '../entities/revision.entity';
 
 export class CreateRevisionDto {
@@ -89,10 +89,4 @@ export class RevisionResponseDto {
     example: 'trace-12345-67890',
   })
   traceId?: string;
-
-  @ApiProperty({ description: '생성 시간' })
-  createdAt: Date;
-
-  @ApiProperty({ description: '수정 시간' })
-  updatedAt: Date;
 }

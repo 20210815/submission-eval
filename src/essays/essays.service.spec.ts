@@ -3,11 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { EssaysService } from './essays.service';
-import {
-  Essay,
-  ComponentType,
-  EvaluationStatus,
-} from './entities/essay.entity';
+import { Essay, EvaluationStatus } from './entities/essay.entity';
 import { EvaluationLog } from './entities/evaluation-log.entity';
 import { Student } from '../students/entities/student.entity';
 import { VideoProcessingService } from './services/video-processing.service';
@@ -17,6 +13,7 @@ import { TextHighlightingService } from './services/text-highlighting.service';
 import { NotificationService } from './services/notification.service';
 import { SubmitEssayDto } from './dto/submit-essay.dto';
 import { CacheService } from '../cache/cache.service';
+import { ComponentType } from './enums/component-type.enum';
 
 describe('EssaysService', () => {
   let service: EssaysService;

@@ -2,7 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EssaysController } from './essays.controller';
 import { EssaysService } from './essays.service';
 import { SubmitEssayDto } from './dto/submit-essay.dto';
-import { ComponentType, EvaluationStatus } from './entities/essay.entity';
+import { EvaluationStatus } from './entities/essay.entity';
+import { ComponentType } from './enums/component-type.enum';
 import {
   SubmitEssayResponseDto,
   EssayResponseDto,

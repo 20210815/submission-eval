@@ -4,10 +4,10 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
 } from 'typeorm';
-import { Essay, ComponentType } from './essay.entity';
+import { Essay } from './essay.entity';
+import { BaseEntity } from '../../common/entities/base.entity';
+import { ComponentType } from '../enums/component-type.enum';
 
 export enum RevisionStatus {
   PENDING = 'PENDING',
@@ -17,7 +17,7 @@ export enum RevisionStatus {
 }
 
 @Entity('revisions')
-export class Revision {
+export class Revision extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -34,10 +34,10 @@ export class Revision {
   studentId: number;
 
   @Column({
-    name: 'component_type',
+    enumName: 'component_type_enum', // ← 이거 추가
     type: 'enum',
     enum: ComponentType,
-    enumName: 'component_type_enum',
+    nullable: false,
   })
   componentType: ComponentType;
 
@@ -72,10 +72,4 @@ export class Revision {
 
   @Column({ name: 'trace_id', type: 'varchar', length: 255, nullable: true })
   traceId: string | null;
-
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
 }

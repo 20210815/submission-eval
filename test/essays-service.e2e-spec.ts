@@ -4,11 +4,8 @@ import { Repository, DataSource } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { EssaysService } from '../src/essays/essays.service';
-import {
-  Essay,
-  EvaluationStatus,
-  ComponentType,
-} from '../src/essays/entities/essay.entity';
+import { Essay, EvaluationStatus } from '../src/essays/entities/essay.entity';
+import { ComponentType } from '../src/essays/enums/component-type.enum';
 import {
   EvaluationLog,
   LogType,

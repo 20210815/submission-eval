@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ComponentType, EvaluationStatus } from '../entities/essay.entity';
+import { EvaluationStatus } from '../entities/essay.entity';
+import { ComponentType } from '../enums/component-type.enum';
 
 export class EssayResponseDto {
   @ApiProperty({

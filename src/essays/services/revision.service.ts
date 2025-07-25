@@ -237,8 +237,6 @@ export class RevisionService {
       errorMessage: revision.errorMessage ?? undefined,
       apiLatency: revision.apiLatency ?? undefined,
       traceId: revision.traceId ?? undefined,
-      createdAt: revision.createdAt,
-      updatedAt: revision.updatedAt,
     };
   }
 }

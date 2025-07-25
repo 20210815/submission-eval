@@ -24,6 +24,7 @@ import { OpenAIService } from './services/openai.service';
 import { TextHighlightingService } from './services/text-highlighting.service';
 import { NotificationService } from './services/notification.service';
 import { CacheService } from '../cache/cache.service';
+import { Revision, RevisionStatus } from './entities/revision.entity';
 
 interface ProcessedVideo {
   videoPath: string;
@@ -39,7 +40,7 @@ interface AIEvaluationResult {
 @Injectable()
 export class EssaysService {
   private readonly logger = new Logger(EssaysService.name);
-  private readonly processingStudents = new Set<number>();
+  private readonly processingStudents = new Set<string>();
 
   constructor(
     @InjectRepository(Essay)
@@ -48,6 +49,8 @@ export class EssaysService {
     private readonly evaluationLogRepository: Repository<EvaluationLog>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Revision)
+    private readonly revisionRepository: Repository<Revision>,
     private readonly dataSource: DataSource,
     private readonly videoProcessingService: VideoProcessingService,
     private readonly azureStorageService: AzureStorageService,
@@ -63,15 +66,16 @@ export class EssaysService {
     videoFile?: Express.Multer.File,
   ): Promise<SubmitEssayResponseDto> {
     const startTime = Date.now();
+    const processingKey = `${studentId}-${dto.componentType}`;
 
-    // 동시 제출 방지 체크
-    if (this.processingStudents.has(studentId)) {
+    // 동시 제출 방지 체크 (같은 componentType에 대해서만)
+    if (this.processingStudents.has(processingKey)) {
       throw new ConflictException(
-        '이미 에세이 제출이 진행 중입니다. 잠시 후 다시 시도해주세요.',
+        `이미 ${dto.componentType} 유형의 에세이 제출이 진행 중입니다. 잠시 후 다시 시도해주세요.`,
       );
     }
 
-    this.processingStudents.add(studentId);
+    this.processingStudents.add(processingKey);
 
     // 트랜잭션 내에서 에세이 생성 및 초기 처리
     const savedEssay = await this.dataSource.transaction(async (manager) => {
@@ -138,8 +142,8 @@ export class EssaysService {
         apiLatency,
       };
     } finally {
-      // 처리 완료 후 학생 ID 제거
-      this.processingStudents.delete(studentId);
+      // 처리 완료 후 processing key 제거
+      this.processingStudents.delete(processingKey);
     }
   }
 
@@ -469,6 +473,14 @@ export class EssaysService {
         traceId,
       );
 
+      // AI 평가 실패 시 자동으로 revision 생성
+      if (essayForNotification) {
+        await this.createRevisionForFailedEssay(
+          essayForNotification,
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+      }
+
       throw error;
     }
   }
@@ -484,6 +496,31 @@ export class EssaysService {
     }
 
     await this.essayRepository.update(essayId, updateData);
+  }
+
+  private async createRevisionForFailedEssay(
+    essay: Essay,
+    errorMessage: string,
+  ): Promise<void> {
+    try {
+      const revision = this.revisionRepository.create({
+        essayId: essay.id,
+        studentId: essay.studentId,
+        componentType: essay.componentType,
+        revisionReason: `AI 평가 실패로 인한 자동 재평가 요청: ${errorMessage}`,
+        status: RevisionStatus.PENDING,
+      });
+
+      await this.revisionRepository.save(revision);
+
+      this.logger.log(
+        `Auto-created revision for failed essay evaluation. Essay ID: ${essay.id}, Revision ID: ${revision.id}`,
+      );
+    } catch (revisionError) {
+      this.logger.error(
+        `Failed to create revision for essay ${essay.id}: ${revisionError instanceof Error ? revisionError.message : 'Unknown error'}`,
+      );
+    }
   }
 
   async logEvaluation(

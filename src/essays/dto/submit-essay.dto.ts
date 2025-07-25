@@ -4,10 +4,11 @@ import {
   IsString,
   MaxLength,
   Length,
+  IsOptional,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { ComponentType } from '../entities/essay.entity';
+import { ComponentType } from '../enums/component-type.enum';
 
 export class SubmitEssayDto {
   @ApiProperty({
@@ -71,5 +72,6 @@ export class SubmitEssayDto {
     format: 'binary',
     required: false,
   })
+  @IsOptional()
   video?: any;
 }
