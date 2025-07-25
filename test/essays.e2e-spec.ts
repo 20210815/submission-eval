@@ -89,7 +89,9 @@ describe('Essays (e2e)', () => {
       // 시퀀스 재설정
       await manager.query('ALTER SEQUENCE students_id_seq RESTART WITH 1');
       await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
-      await manager.query('ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1');
+      await manager.query(
+        'ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1',
+      );
     });
     await app.close();
   });
@@ -102,7 +104,9 @@ describe('Essays (e2e)', () => {
       await manager.query('DELETE FROM evaluation_logs');
       await manager.query('DELETE FROM essays');
       await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
-      await manager.query('ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1');
+      await manager.query(
+        'ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1',
+      );
     });
   });
 
@@ -125,7 +129,7 @@ describe('Essays (e2e)', () => {
       sub: studentId,
       name: savedStudent.name,
     });
-    
+
     // 토큰이 제대로 생성되었는지 확인
     expect(authToken).toBeDefined();
   });
@@ -193,7 +197,7 @@ describe('Essays (e2e)', () => {
         .expect(200);
 
       const responseBody = response.body as ApiResponse<EssayData>;
-      
+
       if (responseBody.data) {
         expect(responseBody.data.essayId).toBeDefined();
       } else {
