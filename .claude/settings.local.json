@@ -25,7 +25,11 @@
       "Bash(npx tsc:*)",
       "Bash(node:*)",
       "Bash(npx jest:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm run test:cov:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": []
   }

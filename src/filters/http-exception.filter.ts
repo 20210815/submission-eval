@@ -13,16 +13,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    
+
     // Handle multer file filter errors
-    if (exception.message && exception.message.includes('비디오 파일만 업로드 가능합니다')) {
-      const errorResponse = ResponseUtil.createFutureApiErrorResponse([exception.message]);
+    if (
+      exception.message &&
+      exception.message.includes('비디오 파일만 업로드 가능합니다')
+    ) {
+      const errorResponse = ResponseUtil.createFutureApiErrorResponse([
+        exception.message,
+      ]);
       return response.status(400).json(errorResponse);
     }
 
     // Handle HTTP exceptions
     if (!(exception instanceof HttpException)) {
-      const errorResponse = ResponseUtil.createFutureApiErrorResponse(['서버 내부 오류가 발생했습니다']);
+      const errorResponse = ResponseUtil.createFutureApiErrorResponse([
+        '서버 내부 오류가 발생했습니다',
+      ]);
       return response.status(500).json(errorResponse);
     }
 

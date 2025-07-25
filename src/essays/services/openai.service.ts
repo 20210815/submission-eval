@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosResponse } from 'axios';
+import { CacheService } from '../../cache/cache.service';
 
 export interface AIEvaluationResult {
   score: number;
@@ -25,7 +26,10 @@ export class OpenAIService {
   private readonly deploymentName: string;
   private readonly apiVersion: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private cacheService: CacheService,
+  ) {
     this.apiKey = this.configService.get<string>('AZURE_ENDPOINT_KEY') || '';
     this.endpoint = this.configService.get<string>('AZURE_ENDPOINT_URL') || '';
     this.deploymentName =
@@ -43,11 +47,29 @@ export class OpenAIService {
     submitText: string,
     componentType: string,
   ): Promise<AIEvaluationResult> {
+    // 캐시 키 생성
+    const cacheKey = this.cacheService.getAIEvaluationKey(
+      submitText,
+      componentType,
+    );
+
+    // 캐시에서 조회
+    const cachedResult =
+      await this.cacheService.get<AIEvaluationResult>(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+
     const prompt = this.buildEvaluationPrompt(title, submitText, componentType);
 
     try {
       const response = await this.callOpenAI(prompt);
-      return this.parseAIResponse(response);
+      const result = this.parseAIResponse(response);
+
+      // 성공한 결과를 캐시에 저장 (24시간)
+      await this.cacheService.set(cacheKey, result, 24 * 60 * 60);
+
+      return result;
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes('timeout')) {
