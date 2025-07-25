@@ -11,14 +11,17 @@ export class ResponseUtil {
   static createErrorResponse(
     exceptionResponse: string | object,
   ): ApiErrorResponse {
-    const message =
+    const messageArray =
       typeof exceptionResponse === 'string'
-        ? exceptionResponse
-        : this.extractMessage(exceptionResponse);
+        ? [exceptionResponse]
+        : this.extractMessageAsArray(exceptionResponse);
 
     return {
       result: 'failed',
-      message: this.normalizeMessage(message),
+      message:
+        messageArray.length > 1
+          ? messageArray
+          : messageArray[0] || '오류가 발생했습니다',
       timestamp: new Date().toISOString(),
     };
   }
@@ -39,15 +42,18 @@ export class ResponseUtil {
     exceptionResponse: string | object,
     status: number,
   ): StandardErrorResponse {
-    const message =
+    const messageArray =
       typeof exceptionResponse === 'string'
-        ? exceptionResponse
-        : this.extractMessage(exceptionResponse);
+        ? [exceptionResponse]
+        : this.extractMessageAsArray(exceptionResponse);
 
     return {
       success: false,
       statusCode: status,
-      message: this.normalizeMessage(message),
+      message:
+        messageArray.length > 1
+          ? messageArray
+          : messageArray[0] || '오류가 발생했습니다',
       timestamp: new Date().toISOString(),
     };
   }
@@ -86,27 +92,28 @@ export class ResponseUtil {
   static createFutureApiErrorResponse(
     message: string | string[],
   ): FutureApiResponse<null> {
+    const messageArray = Array.isArray(message) ? message.flat() : [message];
     return {
       result: 'failed',
-      message,
+      message: messageArray,
     };
   }
 
-  private static extractMessage(exceptionResponse: object): string | string[] {
+  private static extractMessageAsArray(exceptionResponse: object): string[] {
     if (exceptionResponse && typeof exceptionResponse === 'object') {
       if ('message' in exceptionResponse) {
         const msg = exceptionResponse.message;
-        if (typeof msg === 'string' || Array.isArray(msg)) {
+        if (
+          Array.isArray(msg) &&
+          msg.every((item) => typeof item === 'string')
+        ) {
           return msg;
+        }
+        if (typeof msg === 'string') {
+          return [msg];
         }
       }
     }
-    return '오류가 발생했습니다';
-  }
-
-  private static normalizeMessage(message: string | string[]): string {
-    return Array.isArray(message)
-      ? message[0] || '오류가 발생했습니다'
-      : message;
+    return ['오류가 발생했습니다'];
   }
 }

@@ -124,6 +124,7 @@ export class SubmitEssayResponseDto {
     description: '응답 메시지',
     example: '에세이가 성공적으로 제출되었습니다. 평가가 진행 중입니다.',
     required: false,
+    nullable: true,
   })
   message: string | null;
 

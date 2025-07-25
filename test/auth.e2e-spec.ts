@@ -120,7 +120,7 @@ describe('Auth Controller (e2e)', () => {
       // 새로운 비밀번호 정책에 따른 여러 검증 오류 메시지 확인
       if (Array.isArray(body.message)) {
         expect(body.message).toContain(
-          '비밀번호는 최소 4글자 이상이어야 합니다.',
+          '비밀번호는 최소 8글자 이상이어야 합니다.',
         );
       }
     });

@@ -117,11 +117,11 @@ export const API_RESPONSE_SCHEMAS = {
   // 400 Bad Request - 단일 validation 에러
   EMAIL_FORMAT_ERROR: {
     status: 400,
-    description: 'Single validation error',
+    description: '이메일 형식 오류',
     schema: {
       example: {
-        result: 'error',
-        message: ['이메일 형식이 올바르지 않습니다'],
+        result: 'failed',
+        message: '이메일 형식이 올바르지 않습니다',
       },
     },
   },
@@ -129,13 +129,29 @@ export const API_RESPONSE_SCHEMAS = {
   // 400 Bad Request - 여러 validation 에러
   MULTIPLE_VALIDATION_ERRORS: {
     status: 400,
-    description: 'Multiple validation errors',
+    description: '유효성 검사 오류',
     schema: {
       example: {
-        result: 'error',
+        result: 'failed',
         message: [
           '이메일 형식이 올바르지 않습니다',
-          '비밀번호는 최소 4글자 이상이어야 합니다',
+          '비밀번호는 최소 8글자 이상이어야 합니다.',
+        ],
+      },
+    },
+  },
+
+  // 필수 필드 입력 누락
+  REQUIRED_FIELD_MISSING: {
+    status: 400,
+    description: '필수 필드 누락',
+    schema: {
+      example: {
+        result: 'failed',
+        message: [
+          '이름은 필수입니다.',
+          '이메일은 필수입니다.',
+          '비밀번호는 필수입니다.',
         ],
       },
     },
@@ -144,11 +160,11 @@ export const API_RESPONSE_SCHEMAS = {
   // 비밀번호 형식이 올바르지 않은 경우
   PASSWORD_FORMAT_ERROR: {
     status: 400,
-    description: 'Password format is invalid',
+    description: '비밀번호 형식 오류',
     schema: {
       example: {
-        result: 'error',
-        message: ['비밀번호는 최소 4자 이상이어야 합니다'],
+        result: 'failed',
+        message: '비밀번호는 최소 8자 이상이어야 합니다.',
       },
     },
   },
@@ -159,7 +175,7 @@ export const API_RESPONSE_SCHEMAS = {
     schema: {
       example: {
         result: 'failed',
-        message: ['숫자 형태의 ID가 필요합니다.'],
+        message: '숫자 형태의 ID가 필요합니다.',
       },
     },
   },
@@ -168,10 +184,10 @@ export const API_RESPONSE_SCHEMAS = {
 
   UNAUTHORIZED: {
     status: 401,
-    description: 'Invalid credentials',
+    description: '가입하지 않은 사용자',
     schema: {
       example: {
-        result: 'error',
+        result: 'failed',
         message: '사용자를 찾을 수 없습니다',
       },
     },
@@ -183,7 +199,19 @@ export const API_RESPONSE_SCHEMAS = {
     schema: {
       example: {
         result: 'failed',
-        message: ['로그인이 필요합니다.'],
+        message: '로그인이 필요합니다.',
+      },
+    },
+  },
+
+  // 비밀번호 오류
+  INCORRECT_PASSWORD: {
+    status: 401,
+    description: '비밀번호가 일치하지 않음',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '비밀번호가 일치하지 않습니다',
       },
     },
   },
@@ -204,11 +232,11 @@ export const API_RESPONSE_SCHEMAS = {
 
   CONFLICT: {
     status: 409,
-    description: 'Conflict - Student already exists',
+    description: '이미 가입된 이메일',
     schema: {
       example: {
-        result: 'error',
-        message: '이미 존재하는 이메일입니다',
+        result: 'failed',
+        message: '이미 존재하는 이메일입니다.',
       },
     },
   },
@@ -306,7 +334,7 @@ export const ESSAY_VALIDATION_ERROR_EXAMPLES = {
           summary: '단일 필드 에러',
           value: {
             result: 'failed',
-            message: ['제목은 필수입니다.'],
+            message: '제목은 필수입니다.',
           },
         },
         multipleValidationErrors: {
@@ -370,6 +398,11 @@ export const VALIDATION_ERROR_EXAMPLES = {
         multipleValidationErrors: {
           summary: API_RESPONSE_SCHEMAS.MULTIPLE_VALIDATION_ERRORS.description,
           value: API_RESPONSE_SCHEMAS.MULTIPLE_VALIDATION_ERRORS.schema.example,
+        },
+        // 필수 입력 누락
+        requiredFieldMissing: {
+          summary: API_RESPONSE_SCHEMAS.REQUIRED_FIELD_MISSING.description,
+          value: API_RESPONSE_SCHEMAS.REQUIRED_FIELD_MISSING.schema.example,
         },
       },
     },

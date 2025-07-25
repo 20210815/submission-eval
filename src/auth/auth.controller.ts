@@ -15,7 +15,16 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
-  @ApiOperation({ summary: 'Register new student' })
+  @ApiOperation({
+    summary: '학생 회원가입',
+    description: `
+      학생 회원가입 API:
+      - 이메일 중복 체크
+      - 비밀번호 보안 정책 적용 (최소 8글자 이상)
+      - 회원가입 성공 시
+      - 에러 처리 및 유효성 검사 적용
+    `,
+  })
   @ApiBody({ type: SignupDto })
   @ApiResponse(API_RESPONSE_SCHEMAS.SIGNUP_SUCCESS)
   @ApiResponse(VALIDATION_ERROR_EXAMPLES)
@@ -26,7 +35,16 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Login student' })
+  @ApiOperation({
+    summary: '학생 로그인',
+    description: `
+      학생 로그인 API:
+      - JWT 토큰 만료 검증
+      - 보안을 위한 HttpOnly 쿠키 설정
+      - SameSite=Strict 보호
+      - Automatic token refresh handling
+    `,
+  })
   @ApiBody({ type: LoginDto })
   @ApiResponse(API_RESPONSE_SCHEMAS.LOGIN_SUCCESS)
   @ApiResponse(API_RESPONSE_SCHEMAS.UNAUTHORIZED)
@@ -37,13 +55,8 @@ export class AuthController {
   ) {
     const { response, accessToken } = await this.authService.login(dto);
 
-    // Set JWT token as httpOnly cookie
-    res.cookie('token', accessToken, {
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    });
+    // Set Authorization header
+    res.header('Authorization', `Bearer ${accessToken}`);
 
     return response;
   }

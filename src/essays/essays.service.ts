@@ -487,9 +487,11 @@ export class EssaysService {
     const essayExists = await this.essayRepository.findOne({
       where: { id: essayId },
     });
-    
+
     if (!essayExists) {
-      console.warn(`Cannot log evaluation for non-existent essay ID: ${essayId}`);
+      console.warn(
+        `Cannot log evaluation for non-existent essay ID: ${essayId}`,
+      );
       return;
     }
 

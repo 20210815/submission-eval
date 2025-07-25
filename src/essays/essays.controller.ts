@@ -51,8 +51,24 @@ export class EssaysController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: '에세이 제출',
-    description:
-      '학생이 에세이를 제출합니다. 선택적으로 비디오 파일도 함께 업로드할 수 있습니다.',
+    description: `
+      학생이 에세이를 제출하고 AI 평가를 받습니다.
+      
+      ## Enhanced Features (v1.1.0)
+      - **Input Validation**: 에세이 텍스트 10-10,000자 제한
+      - **File Upload**: 향상된 비디오 파일 검증 (100MB 제한)
+      - **Transaction Safety**: 데이터 일관성을 위한 트랜잭션 관리
+      - **Duplicate Prevention**: componentType별 중복 제출 방지
+      - **Concurrent Protection**: 동시 제출 방지 메커니즘
+      
+      ## 처리 과정
+      1. 입력 검증 및 중복 체크
+      2. 비디오 파일 처리 (선택사항)
+      3. Azure Storage 업로드
+      4. OpenAI API를 통한 AI 평가
+      5. 텍스트 하이라이팅 처리
+      6. 결과 저장 및 반환
+    `,
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
