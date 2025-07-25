@@ -19,7 +19,7 @@ export interface OpenAIResponse {
 @Injectable()
 export class OpenAIService {
   private static readonly DEFAULT_TIMEOUT_MS = 60000;
-  
+
   private readonly apiKey: string;
   private readonly endpoint: string;
   private readonly deploymentName: string;
@@ -179,11 +179,14 @@ export class OpenAIService {
 
       const validatedScore = parsed.score;
       return {
-        score: Math.round(validatedScore),
+        score: Math.min(10, Math.max(0, Math.round(validatedScore))),
         feedback: String(parsed.feedback).trim(),
-        highlights: (parsed.highlights as unknown[]).filter(
-          (item): item is string => typeof item === 'string',
-        ),
+        highlights: (parsed.highlights as unknown[])
+          .filter(
+            (item): item is string =>
+              typeof item === 'string' && String(item).trim().length > 0,
+          )
+          .map((item) => String(item).trim()),
       };
     } catch (error) {
       // 파싱 실패 시 예외 던지기

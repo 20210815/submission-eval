@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -36,6 +37,7 @@ interface AIEvaluationResult {
 
 @Injectable()
 export class EssaysService {
+  private readonly logger = new Logger(EssaysService.name);
   private readonly processingStudents = new Set<number>();
 
   constructor(
@@ -489,7 +491,7 @@ export class EssaysService {
     });
 
     if (!essayExists) {
-      console.warn(
+      this.logger.warn(
         `Cannot log evaluation for non-existent essay ID: ${essayId}`,
       );
       return;

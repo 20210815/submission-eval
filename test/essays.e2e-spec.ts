@@ -194,14 +194,10 @@ describe('Essays (e2e)', () => {
 
       const responseBody = response.body as ApiResponse<EssayData>;
       
-      // 응답 구조 디버깅
-      console.log('Response body:', JSON.stringify(responseBody, null, 2));
-      
       if (responseBody.data) {
         expect(responseBody.data.essayId).toBeDefined();
       } else {
         // data가 없다면 에러 응답일 수 있음
-        console.log('No data in response, checking if it is an error response');
         expect(responseBody.result).toBe('failed');
       }
     });

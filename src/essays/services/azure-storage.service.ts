@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   BlobServiceClient,
   generateBlobSASQueryParameters,
@@ -17,6 +17,7 @@ export interface UploadedFile {
 
 @Injectable()
 export class AzureStorageService {
+  private readonly logger = new Logger(AzureStorageService.name);
   private blobServiceClient: BlobServiceClient;
   private containerName: string;
 
@@ -107,9 +108,8 @@ export class AzureStorageService {
     try {
       await blockBlobClient.delete();
     } catch (error) {
-      console.warn(
-        `Failed to delete blob ${blobName}:`,
-        error instanceof Error ? error.message : 'Unknown error',
+      this.logger.warn(
+        `Failed to delete blob ${blobName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }

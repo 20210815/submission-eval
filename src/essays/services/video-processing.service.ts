@@ -14,7 +14,7 @@ export class VideoProcessingService {
   private static readonly CROP_VIDEO_TIMEOUT_MS = 5 * 60 * 1000;
   private static readonly AUDIO_EXTRACTION_TIMEOUT_MS = 3 * 60 * 1000;
   private static readonly AUDIO_PROCESSING_TIMEOUT_MS = 3 * 60 * 1000;
-  
+
   private readonly tempDir = path.join(process.cwd(), 'temp');
 
   constructor() {
@@ -81,17 +81,12 @@ export class VideoProcessingService {
     outputPath: string,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(
-        () => {
-          reject(
-            new Error('비디오 크롭 처리 시간이 초과되었습니다. (5분 제한)'),
-          );
-        },
-        VideoProcessingService.CROP_VIDEO_TIMEOUT_MS,
-      ); // 5분 타임아웃
+      const timeout = setTimeout(() => {
+        reject(new Error('비디오 크롭 처리 시간이 초과되었습니다. (5분 제한)'));
+      }, VideoProcessingService.CROP_VIDEO_TIMEOUT_MS); // 5분 타임아웃
 
       ffmpeg(inputPath)
-        .videoFilters('crop=iw/2:ih:iw/2:0') // 우측 50% 영역만 크롭
+        .videoFilters('crop=iw/2:ih:iw/2:0') // 좌측 50% 영역만 크롭
         .output(outputPath)
         .on('end', () => {
           clearTimeout(timeout);
@@ -110,14 +105,9 @@ export class VideoProcessingService {
     outputPath: string,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(
-        () => {
-          reject(
-            new Error('오디오 추출 처리 시간이 초과되었습니다. (3분 제한)'),
-          );
-        },
-        VideoProcessingService.AUDIO_EXTRACTION_TIMEOUT_MS,
-      ); // 3분 타임아웃
+      const timeout = setTimeout(() => {
+        reject(new Error('오디오 추출 처리 시간이 초과되었습니다. (3분 제한)'));
+      }, VideoProcessingService.AUDIO_EXTRACTION_TIMEOUT_MS); // 3분 타임아웃
 
       ffmpeg(inputPath)
         .output(outputPath)
@@ -140,14 +130,9 @@ export class VideoProcessingService {
     outputPath: string,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(
-        () => {
-          reject(
-            new Error('오디오 제거 처리 시간이 초과되었습니다. (3분 제한)'),
-          );
-        },
-        VideoProcessingService.AUDIO_PROCESSING_TIMEOUT_MS,
-      ); // 3분 타임아웃
+      const timeout = setTimeout(() => {
+        reject(new Error('오디오 제거 처리 시간이 초과되었습니다. (3분 제한)'));
+      }, VideoProcessingService.AUDIO_PROCESSING_TIMEOUT_MS); // 3분 타임아웃
 
       ffmpeg(inputPath)
         .output(outputPath)
