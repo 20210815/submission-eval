@@ -3,10 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
 import { BaseEntity } from '../../common/entities/base.entity';
+import { Revision } from './revision.entity';
 
 export enum ComponentType {
   SPEAKING = 'speaking',
@@ -76,4 +78,7 @@ export class Essay extends BaseEntity {
 
   @Column({ name: 'student_id' })
   studentId: number;
+
+  @OneToMany(() => Revision, (revision) => revision.essay)
+  revisions: Revision[];
 }

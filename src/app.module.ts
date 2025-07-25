@@ -3,6 +3,7 @@ import { StudentsModule } from './students/students.module';
 import { HealthModule } from './health/health.module';
 import { EssaysModule } from './essays/essays.module';
 import { CacheCustomModule } from './cache/cache.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 import { Module, MiddlewareConsumer } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -18,6 +19,7 @@ import { AppService } from './app.service';
     HealthModule,
     EssaysModule,
     CacheCustomModule,
+    SchedulerModule,
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule.forRoot({
       pinoHttp: {
