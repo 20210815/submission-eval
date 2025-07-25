@@ -18,6 +18,8 @@ export interface OpenAIResponse {
 
 @Injectable()
 export class OpenAIService {
+  private static readonly DEFAULT_TIMEOUT_MS = 60000;
+  
   private readonly apiKey: string;
   private readonly endpoint: string;
   private readonly deploymentName: string;
@@ -135,7 +137,7 @@ export class OpenAIService {
       data,
       {
         headers,
-        timeout: 60000, // 60초 타임아웃
+        timeout: OpenAIService.DEFAULT_TIMEOUT_MS,
       },
     );
 
@@ -175,9 +177,9 @@ export class OpenAIService {
         throw new Error('Score must be between 0 and 10');
       }
 
+      const validatedScore = parsed.score;
       return {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        score: Math.round(parsed.score as number),
+        score: Math.round(validatedScore),
         feedback: String(parsed.feedback).trim(),
         highlights: (parsed.highlights as unknown[]).filter(
           (item): item is string => typeof item === 'string',

@@ -11,6 +11,10 @@ export interface ProcessedVideo {
 
 @Injectable()
 export class VideoProcessingService {
+  private static readonly CROP_VIDEO_TIMEOUT_MS = 5 * 60 * 1000;
+  private static readonly AUDIO_EXTRACTION_TIMEOUT_MS = 3 * 60 * 1000;
+  private static readonly AUDIO_PROCESSING_TIMEOUT_MS = 3 * 60 * 1000;
+  
   private readonly tempDir = path.join(process.cwd(), 'temp');
 
   constructor() {
@@ -83,7 +87,7 @@ export class VideoProcessingService {
             new Error('비디오 크롭 처리 시간이 초과되었습니다. (5분 제한)'),
           );
         },
-        5 * 60 * 1000,
+        VideoProcessingService.CROP_VIDEO_TIMEOUT_MS,
       ); // 5분 타임아웃
 
       ffmpeg(inputPath)
@@ -112,7 +116,7 @@ export class VideoProcessingService {
             new Error('오디오 추출 처리 시간이 초과되었습니다. (3분 제한)'),
           );
         },
-        3 * 60 * 1000,
+        VideoProcessingService.AUDIO_EXTRACTION_TIMEOUT_MS,
       ); // 3분 타임아웃
 
       ffmpeg(inputPath)
@@ -142,7 +146,7 @@ export class VideoProcessingService {
             new Error('오디오 제거 처리 시간이 초과되었습니다. (3분 제한)'),
           );
         },
-        3 * 60 * 1000,
+        VideoProcessingService.AUDIO_PROCESSING_TIMEOUT_MS,
       ); // 3분 타임아웃
 
       ffmpeg(inputPath)
