@@ -23,6 +23,7 @@ import { AzureStorageService } from './services/azure-storage.service';
 import { OpenAIService } from './services/openai.service';
 import { TextHighlightingService } from './services/text-highlighting.service';
 import { NotificationService } from './services/notification.service';
+import { CacheService } from '../cache/cache.service';
 
 interface ProcessedVideo {
   videoPath: string;
@@ -53,6 +54,7 @@ export class EssaysService {
     private readonly openAIService: OpenAIService,
     private readonly textHighlightingService: TextHighlightingService,
     private readonly notificationService: NotificationService,
+    private readonly cacheService: CacheService,
   ) {}
 
   async submitEssay(
@@ -112,10 +114,8 @@ export class EssaysService {
         throw new Error('평가된 에세이를 찾을 수 없습니다.');
       }
 
-      // 학생 정보 조회
-      const student = await this.studentRepository.findOne({
-        where: { id: studentId },
-      });
+      // 학생 정보 조회 (캐시 적용)
+      const student = await this.getStudentWithCache(studentId);
 
       const apiLatency = Date.now() - startTime;
 
@@ -147,9 +147,7 @@ export class EssaysService {
     essayId: number,
     studentId: number,
   ): Promise<EssayResponseDto> {
-    const essay = await this.essayRepository.findOne({
-      where: { id: essayId, studentId },
-    });
+    const essay = await this.getEssayWithCache(essayId, studentId);
 
     if (!essay) {
       throw new NotFoundException('에세이를 찾을 수 없습니다.');
@@ -173,12 +171,23 @@ export class EssaysService {
   }
 
   async getStudentEssays(studentId: number): Promise<EssayResponseDto[]> {
+    const cacheKey = this.cacheService.getStudentEssaysKey(studentId);
+
+    // 캐시에서 조회
+    const cachedEssays =
+      await this.cacheService.get<EssayResponseDto[]>(cacheKey);
+
+    if (cachedEssays) {
+      return cachedEssays;
+    }
+
+    // DB에서 조회
     const essays = await this.essayRepository.find({
       where: { studentId },
       order: { createdAt: 'DESC' },
     });
 
-    return essays.map((essay) => ({
+    const essayDtos = essays.map((essay) => ({
       id: essay.id,
       title: essay.title,
       submitText: essay.submitText,
@@ -193,6 +202,11 @@ export class EssaysService {
       createdAt: essay.createdAt,
       updatedAt: essay.updatedAt,
     }));
+
+    // 캐시에 저장 (10분)
+    await this.cacheService.set(cacheKey, essayDtos, 10 * 60);
+
+    return essayDtos;
   }
 
   private async processEssayEvaluation(
@@ -505,5 +519,83 @@ export class EssaysService {
     });
 
     await this.evaluationLogRepository.save(log);
+  }
+
+  /**
+   * 캐시를 사용하여 학생 정보 조회
+   */
+  private async getStudentWithCache(
+    studentId: number,
+  ): Promise<Student | null> {
+    const cacheKey = this.cacheService.getStudentKey(studentId);
+
+    // 캐시에서 조회
+    const student = await this.cacheService.get<Student>(cacheKey);
+
+    if (!student) {
+      // DB에서 조회
+      const foundStudent = await this.studentRepository.findOne({
+        where: { id: studentId },
+      });
+
+      if (foundStudent) {
+        // 캐시에 저장 (1시간)
+        await this.cacheService.set(cacheKey, foundStudent, 60 * 60);
+        return foundStudent;
+      }
+      return null;
+    }
+
+    return student;
+  }
+
+  /**
+   * 캐시를 사용하여 에세이 조회
+   */
+  private async getEssayWithCache(
+    essayId: number,
+    studentId: number,
+  ): Promise<Essay | null> {
+    const cacheKey = this.cacheService.getEssayKey(essayId);
+
+    // 캐시에서 조회
+    const cachedEssay = await this.cacheService.get<Essay>(cacheKey);
+
+    if (cachedEssay) {
+      return cachedEssay;
+    }
+
+    // DB에서 조회
+    const essay = await this.essayRepository.findOne({
+      where: { id: essayId, studentId },
+    });
+
+    if (essay) {
+      // 캐시에 저장 (30분)
+      await this.cacheService.set(cacheKey, essay, 30 * 60);
+    }
+
+    return essay;
+  }
+
+  /**
+   * 학생 에세이 목록 캐시 무효화
+   */
+  private async invalidateStudentEssaysCache(studentId: number) {
+    const cacheKey = this.cacheService.getStudentEssaysKey(studentId);
+    await this.cacheService.del(cacheKey);
+  }
+
+  /**
+   * 에세이 관련 캐시 무효화
+   */
+  private async invalidateEssayCache(essayId: number, studentId: number) {
+    const essayKey = this.cacheService.getEssayKey(essayId);
+    const studentEssaysKey = this.cacheService.getStudentEssaysKey(studentId);
+
+    await Promise.all([
+      this.cacheService.del(essayKey),
+      this.cacheService.del(studentEssaysKey),
+    ]);
   }
 }

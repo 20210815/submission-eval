@@ -10,9 +10,13 @@ import { AzureStorageService } from './services/azure-storage.service';
 import { OpenAIService } from './services/openai.service';
 import { TextHighlightingService } from './services/text-highlighting.service';
 import { NotificationService } from './services/notification.service';
+import { CacheCustomModule } from '../cache/cache.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Essay, EvaluationLog, Student])],
+  imports: [
+    TypeOrmModule.forFeature([Essay, EvaluationLog, Student]),
+    CacheCustomModule,
+  ],
   controllers: [EssaysController],
   providers: [
     EssaysService,

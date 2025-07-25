@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { EssaysService } from './essays.service';
 import {
@@ -15,6 +16,7 @@ import { OpenAIService } from './services/openai.service';
 import { TextHighlightingService } from './services/text-highlighting.service';
 import { NotificationService } from './services/notification.service';
 import { SubmitEssayDto } from './dto/submit-essay.dto';
+import { CacheService } from '../cache/cache.service';
 
 describe('EssaysService', () => {
   let service: EssaysService;
@@ -59,6 +61,22 @@ describe('EssaysService', () => {
     notifyEvaluationFailure: jest.fn(),
   };
 
+  const mockCacheService = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+    getStudentKey: jest.fn(),
+    getStudentEssaysKey: jest.fn(),
+    getEssayKey: jest.fn(),
+  };
+
+  const mockDataSource = {
+    transaction: jest.fn(),
+    manager: {
+      transaction: jest.fn(),
+    },
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -94,6 +112,14 @@ describe('EssaysService', () => {
         {
           provide: NotificationService,
           useValue: mockNotificationService,
+        },
+        {
+          provide: CacheService,
+          useValue: mockCacheService,
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
         },
       ],
     }).compile();
@@ -139,31 +165,39 @@ describe('EssaysService', () => {
 
       mockEvaluationLogRepository.create.mockReturnValue({});
       mockEvaluationLogRepository.save.mockResolvedValue({});
+
+      // Mock DataSource transaction
+      mockDataSource.transaction.mockImplementation(
+        async (callback: (manager: any) => Promise<any>) => {
+          const mockManager = {
+            findOne: jest.fn().mockResolvedValue(null), // No existing essay in transaction
+            save: jest.fn().mockResolvedValue({ id: 1, ...submitEssayDto }),
+            create: jest.fn().mockReturnValue({ id: 1, ...submitEssayDto }),
+          };
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return await callback(mockManager);
+        },
+      );
+
+      // Mock cache methods for student and essay caching
+      mockCacheService.getStudentKey.mockReturnValue(`student:${studentId}`);
+      mockCacheService.get.mockResolvedValue(null); // No cached data
+      mockCacheService.set.mockResolvedValue(undefined);
     });
 
     it('should submit essay successfully without video', async () => {
-      // Final essay state after evaluation
-      mockEssayRepository.findOne
-        .mockResolvedValueOnce(null) // Check for existing essay
-        .mockResolvedValueOnce({
-          // Return saved essay for processing
-          id: 1,
-          ...submitEssayDto,
-          studentId,
-          status: EvaluationStatus.PENDING,
-        })
-        .mockResolvedValueOnce({
-          // Return completed essay after evaluation
-          id: 1,
-          ...submitEssayDto,
-          studentId,
-          status: EvaluationStatus.COMPLETED,
-          score: 85,
-          feedback: '좋은 에세이입니다.',
-          highlights: ['좋은', '에세이'],
-          highlightSubmitText:
-            '테스트 내용입니다. <mark>좋은</mark> <mark>에세이</mark>',
-        });
+      // Mock the essay repository call to get the evaluated essay (after evaluation)
+      mockEssayRepository.findOne.mockResolvedValue({
+        id: 1,
+        ...submitEssayDto,
+        studentId,
+        status: EvaluationStatus.COMPLETED,
+        score: 85,
+        feedback: '좋은 에세이입니다.',
+        highlights: ['좋은', '에세이'],
+        highlightSubmitText:
+          '테스트 내용입니다. <mark>좋은</mark> <mark>에세이</mark>',
+      });
 
       const result = await service.submitEssay(studentId, submitEssayDto);
 
@@ -180,25 +214,31 @@ describe('EssaysService', () => {
         apiLatency: expect.any(Number) as number,
       });
 
-      expect(mockEssayRepository.findOne).toHaveBeenCalledWith({
-        where: { studentId, componentType: ComponentType.WRITING },
-      });
       expect(mockOpenAIService.evaluateEssay).toHaveBeenCalled();
       expect(mockTextHighlightingService.highlightText).toHaveBeenCalled();
     });
 
     it('should throw ConflictException when essay already exists', async () => {
-      mockEssayRepository.findOne.mockResolvedValue({
-        id: 1,
-        studentId,
-        componentType: ComponentType.WRITING,
-      });
+      // Mock DataSource transaction to find existing essay
+      mockDataSource.transaction.mockImplementation(
+        async (callback: (manager: any) => Promise<any>) => {
+          const mockManager = {
+            findOne: jest.fn().mockResolvedValue({
+              id: 1,
+              studentId,
+              componentType: ComponentType.WRITING,
+            }), // Essay already exists
+            save: jest.fn(),
+            create: jest.fn(),
+          };
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return await callback(mockManager);
+        },
+      );
 
       await expect(
         service.submitEssay(studentId, submitEssayDto),
       ).rejects.toThrow(ConflictException);
-
-      expect(mockEssayRepository.save).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException when student is already processing', async () => {
@@ -247,24 +287,15 @@ describe('EssaysService', () => {
         blobName: 'audio.wav',
       });
 
-      mockEssayRepository.findOne
-        .mockResolvedValueOnce(null) // Check for existing essay
-        .mockResolvedValueOnce({
-          // Return saved essay for processing
-          id: 1,
-          ...submitEssayDto,
-          studentId,
-          status: EvaluationStatus.PENDING,
-        })
-        .mockResolvedValueOnce({
-          // Return completed essay after evaluation
-          id: 1,
-          ...submitEssayDto,
-          studentId,
-          status: EvaluationStatus.COMPLETED,
-          videoUrl: 'https://example.com/video.mp4',
-          audioUrl: 'https://example.com/audio.wav',
-        });
+      // Mock the essay repository call to get the evaluated essay (after evaluation)
+      mockEssayRepository.findOne.mockResolvedValue({
+        id: 1,
+        ...submitEssayDto,
+        studentId,
+        status: EvaluationStatus.COMPLETED,
+        videoUrl: 'https://example.com/video.mp4',
+        audioUrl: 'https://example.com/audio.wav',
+      });
 
       const result = await service.submitEssay(
         studentId,
@@ -300,6 +331,11 @@ describe('EssaysService', () => {
         updatedAt: new Date(),
       };
 
+      // Mock cache service - no cached essay
+      mockCacheService.get.mockResolvedValue(null);
+      mockCacheService.set.mockResolvedValue(undefined);
+      mockCacheService.getEssayKey.mockReturnValue(`essay:${essayId}`);
+
       mockEssayRepository.findOne.mockResolvedValue(mockEssay);
 
       const result = await service.getEssay(essayId, studentId);
@@ -320,6 +356,10 @@ describe('EssaysService', () => {
     });
 
     it('should throw NotFoundException when essay not found', async () => {
+      // Mock cache service - no cached essay
+      mockCacheService.get.mockResolvedValue(null);
+      mockCacheService.getEssayKey.mockReturnValue(`essay:${essayId}`);
+
       mockEssayRepository.findOne.mockResolvedValue(null);
 
       await expect(service.getEssay(essayId, studentId)).rejects.toThrow(
@@ -353,6 +393,13 @@ describe('EssaysService', () => {
         },
       ];
 
+      // Mock cache service - no cached essays
+      mockCacheService.get.mockResolvedValue(null);
+      mockCacheService.set.mockResolvedValue(undefined);
+      mockCacheService.getStudentEssaysKey.mockReturnValue(
+        `student-essays:${studentId}`,
+      );
+
       mockEssayRepository.find.mockResolvedValue(mockEssays);
 
       const result = await service.getStudentEssays(studentId);
@@ -367,6 +414,12 @@ describe('EssaysService', () => {
     });
 
     it('should return empty array when no essays found', async () => {
+      // Mock cache service - no cached essays
+      mockCacheService.get.mockResolvedValue(null);
+      mockCacheService.getStudentEssaysKey.mockReturnValue(
+        `student-essays:${studentId}`,
+      );
+
       mockEssayRepository.find.mockResolvedValue([]);
 
       const result = await service.getStudentEssays(studentId);

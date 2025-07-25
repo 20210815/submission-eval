@@ -42,10 +42,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // 계정이 존재하고 유효한 경우에만 인증된 사용자 정보 반환
-    return { 
-      sub: student.id, 
+    return {
+      sub: student.id,
       name: student.name,
-      email: student.email 
+      email: student.email,
     };
   }
 }

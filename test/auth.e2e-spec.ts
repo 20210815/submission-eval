@@ -196,7 +196,7 @@ describe('Auth Controller (e2e)', () => {
       });
 
       // Authorization 헤더가 설정되었는지 확인
-      const authHeader = response.headers['authorization'] as string;
+      const authHeader = response.headers['authorization'];
       expect(authHeader).toBeDefined();
       expect(authHeader).toMatch(/^Bearer .+/);
     });
@@ -267,10 +267,10 @@ describe('Auth Controller (e2e)', () => {
         })
         .expect(200);
 
-      const authHeader = response.headers['authorization'] as string;
+      const authHeader = response.headers['authorization'];
       expect(authHeader).toBeDefined();
       expect(authHeader).toMatch(/^Bearer .+/);
-      
+
       // JWT 토큰 형식 검증 (3개 파트로 구성된 Base64 문자열)
       const token = authHeader.replace('Bearer ', '');
       expect(token.split('.')).toHaveLength(3);
@@ -301,7 +301,7 @@ describe('Auth Controller (e2e)', () => {
       expect(loginBody.studentId).toBe(studentId);
 
       // 3. Authorization 헤더 확인
-      const authHeader = loginResponse.headers['authorization'] as string;
+      const authHeader = loginResponse.headers['authorization'];
       expect(authHeader).toBeDefined();
       expect(authHeader).toMatch(/^Bearer .+/);
     });

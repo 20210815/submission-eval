@@ -80,7 +80,9 @@ describe('EssaysService (e2e)', () => {
       await manager.query('DELETE FROM students');
       await manager.query('ALTER SEQUENCE students_id_seq RESTART WITH 1');
       await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
-      await manager.query('ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1');
+      await manager.query(
+        'ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1',
+      );
     });
     await app.close();
   });
@@ -92,9 +94,11 @@ describe('EssaysService (e2e)', () => {
       await manager.query('DELETE FROM evaluation_logs');
       await manager.query('DELETE FROM essays');
       await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
-      await manager.query('ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1');
+      await manager.query(
+        'ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1',
+      );
     });
-    
+
     // processingStudents Map 초기화
     (service as any).processingStudents.clear();
   });
@@ -109,10 +113,10 @@ describe('EssaysService (e2e)', () => {
 
     beforeEach(async () => {
       // testStudent가 존재하는지 확인하고 없으면 새로 생성
-      let studentExists = await studentRepository.findOne({
-        where: { id: testStudent.id }
+      const studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id },
       });
-      
+
       if (!studentExists) {
         const student = studentRepository.create({
           name: '테스트 학생',
@@ -121,7 +125,7 @@ describe('EssaysService (e2e)', () => {
         });
         testStudent = await studentRepository.save(student);
       }
-      
+
       // Mock services
       jest.spyOn(openAIService, 'evaluateEssay').mockResolvedValue({
         score: 85,
@@ -273,7 +277,7 @@ describe('EssaysService (e2e)', () => {
     it('should prevent concurrent submissions from same student', async () => {
       // processingStudents Map이 깨끗한 상태인지 확인
       (service as any).processingStudents.clear();
-      
+
       // 두 개의 동시 제출 시도
       const promise1 = service.submitEssay(testStudent.id, mockSubmitEssayDto);
       const promise2 = service.submitEssay(testStudent.id, {
@@ -301,7 +305,7 @@ describe('EssaysService (e2e)', () => {
     it('should handle OpenAI service failure', async () => {
       // processingStudents Map 초기화
       (service as any).processingStudents.clear();
-      
+
       jest
         .spyOn(openAIService, 'evaluateEssay')
         .mockRejectedValue(new Error('OpenAI API Error'));
@@ -328,7 +332,7 @@ describe('EssaysService (e2e)', () => {
     it('should handle video processing failure', async () => {
       // processingStudents Map 초기화
       (service as any).processingStudents.clear();
-      
+
       jest
         .spyOn(videoProcessingService, 'processVideo')
         .mockRejectedValue(new Error('Video processing failed'));
@@ -393,10 +397,10 @@ describe('EssaysService (e2e)', () => {
 
     beforeEach(async () => {
       // testStudent가 존재하는지 확인하고 없으면 새로 생성
-      let studentExists = await studentRepository.findOne({
-        where: { id: testStudent.id }
+      const studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id },
       });
-      
+
       if (!studentExists) {
         const student = studentRepository.create({
           name: '테스트 학생',
@@ -405,7 +409,7 @@ describe('EssaysService (e2e)', () => {
         });
         testStudent = await studentRepository.save(student);
       }
-      
+
       const essay = essayRepository.create({
         title: '테스트 에세이',
         submitText: '테스트 에세이 내용',
@@ -466,10 +470,10 @@ describe('EssaysService (e2e)', () => {
   describe('getStudentEssays', () => {
     beforeEach(async () => {
       // testStudent가 존재하는지 확인하고 없으면 새로 생성
-      let studentExists = await studentRepository.findOne({
-        where: { id: testStudent.id }
+      const studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id },
       });
-      
+
       if (!studentExists) {
         const student = studentRepository.create({
           name: '테스트 학생',
@@ -478,7 +482,7 @@ describe('EssaysService (e2e)', () => {
         });
         testStudent = await studentRepository.save(student);
       }
-      
+
       // 여러 에세이 생성
       const essays = [
         {
@@ -577,10 +581,10 @@ describe('EssaysService (e2e)', () => {
 
     beforeEach(async () => {
       // testStudent가 존재하는지 확인하고 없으면 새로 생성
-      let studentExists = await studentRepository.findOne({
-        where: { id: testStudent.id }
+      const studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id },
       });
-      
+
       if (!studentExists) {
         const student = studentRepository.create({
           name: '테스트 학생',
@@ -589,7 +593,7 @@ describe('EssaysService (e2e)', () => {
         });
         testStudent = await studentRepository.save(student);
       }
-      
+
       const essay = essayRepository.create({
         title: '로그 테스트 에세이',
         submitText: '로그 테스트 내용',
@@ -598,7 +602,7 @@ describe('EssaysService (e2e)', () => {
         status: EvaluationStatus.PENDING,
       });
       testEssay = await essayRepository.save(essay);
-      
+
       // testEssay가 제대로 저장되었는지 확인
       expect(testEssay).toBeTruthy();
       expect(testEssay.id).toBeDefined();
@@ -668,10 +672,10 @@ describe('EssaysService (e2e)', () => {
   describe('Service Integration', () => {
     beforeEach(async () => {
       // testStudent가 존재하는지 확인하고 없으면 새로 생성
-      let studentExists = await studentRepository.findOne({
-        where: { id: testStudent.id }
+      const studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id },
       });
-      
+
       if (!studentExists) {
         const student = studentRepository.create({
           name: '테스트 학생',
@@ -680,7 +684,7 @@ describe('EssaysService (e2e)', () => {
         });
         testStudent = await studentRepository.save(student);
       }
-      
+
       // 모든 서비스가 정상 작동하도록 Mock 설정
       jest.spyOn(openAIService, 'evaluateEssay').mockResolvedValue({
         score: 88,

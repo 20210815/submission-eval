@@ -43,6 +43,26 @@ describe('NotificationService', () => {
     const errorMessage = 'AI 평가 중 오류가 발생했습니다';
     const traceId = 'test-trace-id';
 
+    let loggerLogSpy: jest.SpyInstance;
+    let loggerWarnSpy: jest.SpyInstance;
+    let loggerErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      loggerLogSpy = jest.spyOn(service['logger'], 'log').mockImplementation();
+      loggerWarnSpy = jest
+        .spyOn(service['logger'], 'warn')
+        .mockImplementation();
+      loggerErrorSpy = jest
+        .spyOn(service['logger'], 'error')
+        .mockImplementation();
+    });
+
+    afterEach(() => {
+      loggerLogSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
+    });
+
     it('should send Slack notification successfully', async () => {
       const slackWebhookUrl = 'https://hooks.slack.com/test-webhook';
       mockConfigService.get.mockImplementation((key: string) => {
@@ -53,11 +73,6 @@ describe('NotificationService', () => {
 
       mockedAxios.post.mockResolvedValue({ status: 200 });
 
-      const mockConsoleLog = jest.fn();
-      const consoleSpy = jest
-        .spyOn(console, 'log')
-        .mockImplementation(mockConsoleLog);
-
       await service.notifyEvaluationFailure(
         essayId,
         studentId,
@@ -65,7 +80,7 @@ describe('NotificationService', () => {
         traceId,
       );
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect(loggerLogSpy).toHaveBeenCalledWith(
         '🔔 NotificationService.notifyEvaluationFailure called:',
         {
           essayId,
@@ -75,7 +90,7 @@ describe('NotificationService', () => {
         },
       );
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect(loggerLogSpy).toHaveBeenCalledWith(
         '🔗 Slack webhook URL:',
         'CONFIGURED',
       );
@@ -129,12 +144,10 @@ describe('NotificationService', () => {
         },
       );
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect(loggerLogSpy).toHaveBeenCalledWith(
         '✅ Slack notification sent successfully. Response status:',
         200,
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should warn and return early when Slack webhook URL is not configured', async () => {
@@ -144,15 +157,6 @@ describe('NotificationService', () => {
         return undefined;
       });
 
-      const mockConsoleWarn = jest.fn();
-      const mockConsoleLog = jest.fn();
-      const consoleWarnSpy = jest
-        .spyOn(console, 'warn')
-        .mockImplementation(mockConsoleWarn);
-      const consoleLogSpy = jest
-        .spyOn(console, 'log')
-        .mockImplementation(mockConsoleLog);
-
       await service.notifyEvaluationFailure(
         essayId,
         studentId,
@@ -160,19 +164,16 @@ describe('NotificationService', () => {
         traceId,
       );
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect(loggerLogSpy).toHaveBeenCalledWith(
         '🔗 Slack webhook URL:',
         'NOT CONFIGURED',
       );
 
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
         '❌ Slack webhook URL not configured',
       );
 
       expect(mockedAxios.post).not.toHaveBeenCalled();
-
-      consoleWarnSpy.mockRestore();
-      consoleLogSpy.mockRestore();
     });
 
     it('should handle axios error gracefully', async () => {
@@ -186,21 +187,14 @@ describe('NotificationService', () => {
       const axiosError = new Error('Network error');
       mockedAxios.post.mockRejectedValue(axiosError);
 
-      const mockConsoleError = jest.fn();
-      const consoleErrorSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation(mockConsoleError);
-
       await expect(
         service.notifyEvaluationFailure(essayId, studentId, errorMessage),
       ).resolves.not.toThrow();
 
-      expect(mockConsoleError).toHaveBeenCalledWith(
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
         'Failed to send Slack notification:',
         axiosError,
       );
-
-      consoleErrorSpy.mockRestore();
     });
 
     it('should handle axios error with response data gracefully', async () => {
@@ -218,21 +212,14 @@ describe('NotificationService', () => {
 
       mockedAxios.post.mockRejectedValue(axiosError);
 
-      const mockConsoleError = jest.fn();
-      const consoleErrorSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation(mockConsoleError);
-
       await expect(
         service.notifyEvaluationFailure(essayId, studentId, errorMessage),
       ).resolves.not.toThrow();
 
-      expect(mockConsoleError).toHaveBeenCalledWith(
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
         'Failed to send Slack notification:',
         axiosError,
       );
-
-      consoleErrorSpy.mockRestore();
     });
 
     it('should use default trace ID when not provided', async () => {
@@ -245,14 +232,9 @@ describe('NotificationService', () => {
 
       mockedAxios.post.mockResolvedValue({ status: 200 });
 
-      const mockConsoleLog = jest.fn();
-      const consoleSpy = jest
-        .spyOn(console, 'log')
-        .mockImplementation(mockConsoleLog);
-
       await service.notifyEvaluationFailure(essayId, studentId, errorMessage);
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect(loggerLogSpy).toHaveBeenCalledWith(
         '🔔 NotificationService.notifyEvaluationFailure called:',
         {
           essayId,
@@ -277,8 +259,6 @@ describe('NotificationService', () => {
         }),
         expect.any(Object),
       );
-
-      consoleSpy.mockRestore();
     });
   });
 });
