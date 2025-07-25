@@ -10,7 +10,6 @@ import {
   Req,
   HttpCode,
   BadRequestException,
-  ValidationPipe,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -88,7 +87,10 @@ export class EssaysController {
       },
       fileFilter: (req, file, callback) => {
         if (!file.mimetype.includes('video')) {
-          return callback(new BadRequestException('비디오 파일만 업로드 가능합니다.'), false);
+          return callback(
+            new BadRequestException('비디오 파일만 업로드 가능합니다.'),
+            false,
+          );
         }
         callback(null, true);
       },

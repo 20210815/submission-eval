@@ -16,7 +16,9 @@ export class SubmitEssayDto {
     maxLength: 255,
     required: true,
   })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }): string =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString({ message: '제목은 문자열이어야 합니다.' })
   @IsNotEmpty({ message: '제목은 필수입니다.' })
   @MaxLength(255, { message: '제목은 255자 이하여야 합니다.' })
@@ -36,7 +38,9 @@ export class SubmitEssayDto {
     minLength: 10,
     maxLength: 10000,
   })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }): string =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString({ message: '에세이 내용은 문자열이어야 합니다.' })
   @IsNotEmpty({ message: '에세이 내용은 필수입니다.' })
   @Length(10, 10000, {
