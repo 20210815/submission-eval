@@ -147,9 +147,7 @@ export class EssaysService {
     essayId: number,
     studentId: number,
   ): Promise<EssayResponseDto> {
-    const essay = await this.essayRepository.findOne({
-      where: { id: essayId, studentId },
-    });
+    const essay = await this.getEssayWithCache(essayId, studentId);
 
     if (!essay) {
       throw new NotFoundException('에세이를 찾을 수 없습니다.');
@@ -173,12 +171,23 @@ export class EssaysService {
   }
 
   async getStudentEssays(studentId: number): Promise<EssayResponseDto[]> {
+    const cacheKey = this.cacheService.getStudentEssaysKey(studentId);
+
+    // 캐시에서 조회
+    const cachedEssays =
+      await this.cacheService.get<EssayResponseDto[]>(cacheKey);
+
+    if (cachedEssays) {
+      return cachedEssays;
+    }
+
+    // DB에서 조회
     const essays = await this.essayRepository.find({
       where: { studentId },
       order: { createdAt: 'DESC' },
     });
 
-    return essays.map((essay) => ({
+    const essayDtos = essays.map((essay) => ({
       id: essay.id,
       title: essay.title,
       submitText: essay.submitText,
@@ -193,6 +202,11 @@ export class EssaysService {
       createdAt: essay.createdAt,
       updatedAt: essay.updatedAt,
     }));
+
+    // 캐시에 저장 (10분)
+    await this.cacheService.set(cacheKey, essayDtos, 10 * 60);
+
+    return essayDtos;
   }
 
   private async processEssayEvaluation(
@@ -538,22 +552,27 @@ export class EssaysService {
   /**
    * 캐시를 사용하여 에세이 조회
    */
-  private async getEssayWithCache(essayId: number, studentId: number) {
+  private async getEssayWithCache(
+    essayId: number,
+    studentId: number,
+  ): Promise<Essay | null> {
     const cacheKey = this.cacheService.getEssayKey(essayId);
 
     // 캐시에서 조회
-    let essay = await this.cacheService.get(cacheKey);
+    const cachedEssay = await this.cacheService.get<Essay>(cacheKey);
 
-    if (!essay) {
-      // DB에서 조회
-      essay = await this.essayRepository.findOne({
-        where: { id: essayId, studentId },
-      });
+    if (cachedEssay) {
+      return cachedEssay;
+    }
 
-      if (essay) {
-        // 캐시에 저장 (30분)
-        await this.cacheService.set(cacheKey, essay, 30 * 60);
-      }
+    // DB에서 조회
+    const essay = await this.essayRepository.findOne({
+      where: { id: essayId, studentId },
+    });
+
+    if (essay) {
+      // 캐시에 저장 (30분)
+      await this.cacheService.set(cacheKey, essay, 30 * 60);
     }
 
     return essay;
