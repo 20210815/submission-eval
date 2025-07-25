@@ -58,13 +58,21 @@ function IsPasswordRequired(validationOptions?: ValidationOptions) {
 }
 
 export class SignupDto {
-  @ApiProperty({ example: 'John Doe', description: 'Student name' })
+  @ApiProperty({
+    example: 'John Doe',
+    description: 'Student name',
+    maxLength: 100,
+  })
   @IsString()
   @IsNotEmpty({ message: '이름은 필수입니다.' })
   @MaxLength(100, { message: '이름은 100글자를 초과할 수 없습니다.' })
   name: string;
 
-  @ApiProperty({ example: 'john@example.com', description: 'Student email' })
+  @ApiProperty({
+    example: 'john@example.com',
+    description: 'Student email',
+    maxLength: 255,
+  })
   @IsString()
   @IsEmailRequired()
   @MaxLength(255, { message: '이메일은 255글자를 초과할 수 없습니다.' })

@@ -169,6 +169,30 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
+  // 이름 길이 제한 오류
+  NAME_LENGTH_ERROR: {
+    status: 400,
+    description: '이름 길이 제한 오류',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '이름은 100글자를 초과할 수 없습니다.',
+      },
+    },
+  },
+
+  // 이메일 길이 제한 오류
+  EMAIL_LENGTH_ERROR: {
+    status: 400,
+    description: '이메일 길이 제한 오류',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '이메일은 255글자를 초과할 수 없습니다.',
+      },
+    },
+  },
+
   INVALID_ID_FORMAT: {
     status: 400,
     description: '잘못된 ID 형식',
@@ -403,6 +427,16 @@ export const VALIDATION_ERROR_EXAMPLES = {
         requiredFieldMissing: {
           summary: API_RESPONSE_SCHEMAS.REQUIRED_FIELD_MISSING.description,
           value: API_RESPONSE_SCHEMAS.REQUIRED_FIELD_MISSING.schema.example,
+        },
+        // 이름 길이 제한 오류
+        nameLengthError: {
+          summary: API_RESPONSE_SCHEMAS.NAME_LENGTH_ERROR.description,
+          value: API_RESPONSE_SCHEMAS.NAME_LENGTH_ERROR.schema.example,
+        },
+        // 이메일 길이 제한 오류
+        emailLengthError: {
+          summary: API_RESPONSE_SCHEMAS.EMAIL_LENGTH_ERROR.description,
+          value: API_RESPONSE_SCHEMAS.EMAIL_LENGTH_ERROR.schema.example,
         },
       },
     },
