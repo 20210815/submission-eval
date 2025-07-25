@@ -4,6 +4,7 @@ import {
   ValidateBy,
   ValidationOptions,
   ValidationArguments,
+  MaxLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -60,11 +61,13 @@ export class SignupDto {
   @ApiProperty({ example: 'John Doe', description: 'Student name' })
   @IsString()
   @IsNotEmpty({ message: '이름은 필수입니다.' })
+  @MaxLength(100, { message: '이름은 100글자를 초과할 수 없습니다.' })
   name: string;
 
   @ApiProperty({ example: 'john@example.com', description: 'Student email' })
   @IsString()
   @IsEmailRequired()
+  @MaxLength(255, { message: '이메일은 255글자를 초과할 수 없습니다.' })
   email: string;
 
   @ApiProperty({

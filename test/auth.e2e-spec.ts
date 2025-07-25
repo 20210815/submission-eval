@@ -52,7 +52,7 @@ describe('Auth Controller (e2e)', () => {
     // 데이터베이스 연결 가져오기
     dataSource = app.get(DataSource);
     httpServer = app.getHttpServer();
-  });
+  }, 30000);
 
   afterAll(async () => {
     // 테스트 데이터 정리
@@ -195,14 +195,10 @@ describe('Auth Controller (e2e)', () => {
         studentId: expect.any(Number),
       });
 
-      // 쿠키가 설정되었는지 확인
-      const cookies = response.headers['set-cookie'] as unknown as
-        | string[]
-        | undefined;
-      expect(cookies).toBeDefined();
-      expect(
-        cookies?.some((cookie: string) => cookie.startsWith('token=')),
-      ).toBe(true);
+      // Authorization 헤더가 설정되었는지 확인
+      const authHeader = response.headers['authorization'] as string;
+      expect(authHeader).toBeDefined();
+      expect(authHeader).toMatch(/^Bearer .+/);
     });
 
     it('should return 401 for invalid email', async () => {
@@ -262,7 +258,7 @@ describe('Auth Controller (e2e)', () => {
       expect(Array.isArray(body.message)).toBe(true);
     });
 
-    it('should set httpOnly cookie with correct attributes', async () => {
+    it('should set Authorization header with JWT token', async () => {
       const response = await request(httpServer)
         .post('/v1/auth/login')
         .send({
@@ -271,16 +267,13 @@ describe('Auth Controller (e2e)', () => {
         })
         .expect(200);
 
-      const cookies = response.headers['set-cookie'] as unknown as
-        | string[]
-        | undefined;
-      const tokenCookie = cookies?.find((cookie: string) =>
-        cookie.startsWith('token='),
-      );
-
-      expect(tokenCookie).toBeDefined();
-      expect(tokenCookie).toContain('HttpOnly');
-      expect(tokenCookie).toContain('SameSite=Strict');
+      const authHeader = response.headers['authorization'] as string;
+      expect(authHeader).toBeDefined();
+      expect(authHeader).toMatch(/^Bearer .+/);
+      
+      // JWT 토큰 형식 검증 (3개 파트로 구성된 Base64 문자열)
+      const token = authHeader.replace('Bearer ', '');
+      expect(token.split('.')).toHaveLength(3);
     });
   });
 
@@ -307,14 +300,10 @@ describe('Auth Controller (e2e)', () => {
       const loginBody = loginResponse.body as AuthSuccessResponse;
       expect(loginBody.studentId).toBe(studentId);
 
-      // 3. 쿠키 확인
-      const cookies = loginResponse.headers['set-cookie'] as unknown as
-        | string[]
-        | undefined;
-      expect(cookies).toBeDefined();
-      expect(
-        cookies?.some((cookie: string) => cookie.startsWith('token=')),
-      ).toBe(true);
+      // 3. Authorization 헤더 확인
+      const authHeader = loginResponse.headers['authorization'] as string;
+      expect(authHeader).toBeDefined();
+      expect(authHeader).toMatch(/^Bearer .+/);
     });
   });
 

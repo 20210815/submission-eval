@@ -116,11 +116,18 @@ describe('Essays (e2e)', () => {
     const savedStudent = await studentRepository.save(student);
     studentId = savedStudent.id;
 
+    // student가 제대로 생성되었는지 확인
+    expect(studentId).toBeDefined();
+    expect(studentId).toBeGreaterThan(0);
+
     // JWT 토큰 재생성
     authToken = jwtService.sign({
       sub: studentId,
       name: savedStudent.name,
     });
+    
+    // 토큰이 제대로 생성되었는지 확인
+    expect(authToken).toBeDefined();
   });
 
   describe('POST /v1/submissions', () => {

@@ -86,7 +86,7 @@ describe('EssaysService (e2e)', () => {
   });
 
   afterEach(async () => {
-    // 각 테스트 후에 에세이와 로그 데이터 정리 - FK 제약조건 순서 준수
+    // 각 테스트 후에 에세이와 로그 데이터만 정리 - student는 유지
     const dataSource = app.get(DataSource);
     await dataSource.transaction(async (manager) => {
       await manager.query('DELETE FROM evaluation_logs');
@@ -94,6 +94,9 @@ describe('EssaysService (e2e)', () => {
       await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
       await manager.query('ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1');
     });
+    
+    // processingStudents Map 초기화
+    (service as any).processingStudents.clear();
   });
 
   describe('submitEssay', () => {
@@ -104,7 +107,21 @@ describe('EssaysService (e2e)', () => {
       componentType: ComponentType.WRITING,
     };
 
-    beforeEach(() => {
+    beforeEach(async () => {
+      // testStudent가 존재하는지 확인하고 없으면 새로 생성
+      let studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id }
+      });
+      
+      if (!studentExists) {
+        const student = studentRepository.create({
+          name: '테스트 학생',
+          email: `test-${Date.now()}-${Math.random()}@example.com`,
+          password: 'hashedpassword',
+        });
+        testStudent = await studentRepository.save(student);
+      }
+      
       // Mock services
       jest.spyOn(openAIService, 'evaluateEssay').mockResolvedValue({
         score: 85,
@@ -254,6 +271,9 @@ describe('EssaysService (e2e)', () => {
     });
 
     it('should prevent concurrent submissions from same student', async () => {
+      // processingStudents Map이 깨끗한 상태인지 확인
+      (service as any).processingStudents.clear();
+      
       // 두 개의 동시 제출 시도
       const promise1 = service.submitEssay(testStudent.id, mockSubmitEssayDto);
       const promise2 = service.submitEssay(testStudent.id, {
@@ -279,23 +299,9 @@ describe('EssaysService (e2e)', () => {
     });
 
     it('should handle OpenAI service failure', async () => {
-      // 테스트 학생이 존재하는지 확인하고 없으면 새로 생성
-      let studentExists = await studentRepository.findOne({
-        where: { id: testStudent.id }
-      });
+      // processingStudents Map 초기화
+      (service as any).processingStudents.clear();
       
-      if (!studentExists) {
-        const student = studentRepository.create({
-          name: '테스트 학생',
-          email: `test-${Date.now()}-${Math.random()}@example.com`,
-          password: 'hashedpassword',
-        });
-        testStudent = await studentRepository.save(student);
-        studentExists = testStudent;
-      }
-      
-      expect(studentExists).toBeTruthy();
-
       jest
         .spyOn(openAIService, 'evaluateEssay')
         .mockRejectedValue(new Error('OpenAI API Error'));
@@ -320,23 +326,9 @@ describe('EssaysService (e2e)', () => {
     });
 
     it('should handle video processing failure', async () => {
-      // 테스트 학생이 존재하는지 확인하고 없으면 새로 생성
-      let studentExists = await studentRepository.findOne({
-        where: { id: testStudent.id }
-      });
+      // processingStudents Map 초기화
+      (service as any).processingStudents.clear();
       
-      if (!studentExists) {
-        const student = studentRepository.create({
-          name: '테스트 학생',
-          email: `test-${Date.now()}-${Math.random()}@example.com`,
-          password: 'hashedpassword',
-        });
-        testStudent = await studentRepository.save(student);
-        studentExists = testStudent;
-      }
-      
-      expect(studentExists).toBeTruthy();
-
       jest
         .spyOn(videoProcessingService, 'processVideo')
         .mockRejectedValue(new Error('Video processing failed'));
@@ -365,8 +357,8 @@ describe('EssaysService (e2e)', () => {
     });
 
     it('should handle azure storage failure', async () => {
-      // beforeEach에서 생성된 testStudent 사용
-      expect(testStudent).toBeTruthy();
+      // processingStudents Map 초기화
+      (service as any).processingStudents.clear();
 
       jest
         .spyOn(azureStorageService, 'uploadVideo')
@@ -400,6 +392,20 @@ describe('EssaysService (e2e)', () => {
     let testEssay: Essay;
 
     beforeEach(async () => {
+      // testStudent가 존재하는지 확인하고 없으면 새로 생성
+      let studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id }
+      });
+      
+      if (!studentExists) {
+        const student = studentRepository.create({
+          name: '테스트 학생',
+          email: `test-${Date.now()}-${Math.random()}@example.com`,
+          password: 'hashedpassword',
+        });
+        testStudent = await studentRepository.save(student);
+      }
+      
       const essay = essayRepository.create({
         title: '테스트 에세이',
         submitText: '테스트 에세이 내용',
@@ -459,6 +465,20 @@ describe('EssaysService (e2e)', () => {
 
   describe('getStudentEssays', () => {
     beforeEach(async () => {
+      // testStudent가 존재하는지 확인하고 없으면 새로 생성
+      let studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id }
+      });
+      
+      if (!studentExists) {
+        const student = studentRepository.create({
+          name: '테스트 학생',
+          email: `test-${Date.now()}-${Math.random()}@example.com`,
+          password: 'hashedpassword',
+        });
+        testStudent = await studentRepository.save(student);
+      }
+      
       // 여러 에세이 생성
       const essays = [
         {
@@ -556,9 +576,19 @@ describe('EssaysService (e2e)', () => {
     let testEssay: Essay;
 
     beforeEach(async () => {
-      // testStudent가 확실히 존재하는지 확인
-      expect(testStudent).toBeTruthy();
-      expect(testStudent.id).toBeDefined();
+      // testStudent가 존재하는지 확인하고 없으면 새로 생성
+      let studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id }
+      });
+      
+      if (!studentExists) {
+        const student = studentRepository.create({
+          name: '테스트 학생',
+          email: `test-${Date.now()}-${Math.random()}@example.com`,
+          password: 'hashedpassword',
+        });
+        testStudent = await studentRepository.save(student);
+      }
       
       const essay = essayRepository.create({
         title: '로그 테스트 에세이',
@@ -636,7 +666,21 @@ describe('EssaysService (e2e)', () => {
   });
 
   describe('Service Integration', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+      // testStudent가 존재하는지 확인하고 없으면 새로 생성
+      let studentExists = await studentRepository.findOne({
+        where: { id: testStudent.id }
+      });
+      
+      if (!studentExists) {
+        const student = studentRepository.create({
+          name: '테스트 학생',
+          email: `test-${Date.now()}-${Math.random()}@example.com`,
+          password: 'hashedpassword',
+        });
+        testStudent = await studentRepository.save(student);
+      }
+      
       // 모든 서비스가 정상 작동하도록 Mock 설정
       jest.spyOn(openAIService, 'evaluateEssay').mockResolvedValue({
         score: 88,
