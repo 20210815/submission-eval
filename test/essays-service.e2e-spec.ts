@@ -100,6 +100,7 @@ describe('EssaysService (e2e)', () => {
     });
 
     // processingStudents Map 초기화
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     (service as any).processingStudents.clear();
   });
 
@@ -276,6 +277,7 @@ describe('EssaysService (e2e)', () => {
 
     it('should prevent concurrent submissions from same student', async () => {
       // processingStudents Map이 깨끗한 상태인지 확인
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       (service as any).processingStudents.clear();
 
       // 두 개의 동시 제출 시도
@@ -304,6 +306,7 @@ describe('EssaysService (e2e)', () => {
 
     it('should handle OpenAI service failure', async () => {
       // processingStudents Map 초기화
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       (service as any).processingStudents.clear();
 
       jest
@@ -331,6 +334,7 @@ describe('EssaysService (e2e)', () => {
 
     it('should handle video processing failure', async () => {
       // processingStudents Map 초기화
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       (service as any).processingStudents.clear();
 
       jest
@@ -362,6 +366,7 @@ describe('EssaysService (e2e)', () => {
 
     it('should handle azure storage failure', async () => {
       // processingStudents Map 초기화
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       (service as any).processingStudents.clear();
 
       jest

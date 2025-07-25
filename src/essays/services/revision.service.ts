@@ -82,7 +82,11 @@ export class RevisionService {
     page: number = 1,
     size: number = 20,
     sort: string = 'createdAt,DESC',
-  ): Promise<{ data: RevisionResponseDto[]; total: number; totalPages: number }> {
+  ): Promise<{
+    data: RevisionResponseDto[];
+    total: number;
+    totalPages: number;
+  }> {
     const [sortField, sortOrder] = sort.split(',');
     const order = sortOrder?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
@@ -141,11 +145,10 @@ export class RevisionService {
       );
 
       // 텍스트 하이라이팅
-      const highlightSubmitText =
-        this.textHighlightingService.highlightText(
-          revision.essay.submitText,
-          aiResult.highlights,
-        );
+      const highlightSubmitText = this.textHighlightingService.highlightText(
+        revision.essay.submitText,
+        aiResult.highlights,
+      );
 
       const apiLatency = Date.now() - startTime;
 

@@ -243,7 +243,9 @@ export class SchedulerService {
         successfulEvaluations: successfulCount,
         failedEvaluations: failedCount,
         pendingEvaluations: pendingCount,
-        averageScore: averageScore ? Math.round(averageScore * 100) / 100 : null,
+        averageScore: averageScore
+          ? Math.round(averageScore * 100) / 100
+          : null,
       };
 
       // 로그로 출력 (실제로는 DB에 저장)

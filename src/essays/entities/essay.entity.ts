@@ -6,6 +6,7 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
+import { forwardRef } from '@nestjs/common';
 import { Student } from '../../students/entities/student.entity';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { Revision } from './revision.entity';
@@ -79,6 +80,6 @@ export class Essay extends BaseEntity {
   @Column({ name: 'student_id' })
   studentId: number;
 
-  @OneToMany(() => Revision, (revision) => revision.essay)
+  @OneToMany(() => forwardRef(() => Revision), (revision) => revision.essay)
   revisions: Revision[];
 }

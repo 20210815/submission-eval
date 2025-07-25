@@ -7,8 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Essay } from './essay.entity';
-import { ComponentType } from './essay.entity';
+import { Essay, ComponentType } from './essay.entity';
 
 export enum RevisionStatus {
   PENDING = 'PENDING',
@@ -25,7 +24,9 @@ export class Revision {
   @Column({ name: 'essay_id' })
   essayId: number;
 
-  @ManyToOne(() => Essay, (essay) => essay.revisions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Essay, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'essay_id' })
   essay: Essay;
 
