@@ -29,7 +29,8 @@
       "Bash(git commit:*)",
       "Bash(npm run test:cov:*)",
       "Bash(npm uninstall:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
