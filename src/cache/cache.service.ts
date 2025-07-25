@@ -13,28 +13,26 @@ export class CacheService {
    * 캐시에서 값 조회
    */
   async get<T>(key: string): Promise<T | undefined> {
-    return await this.cacheManager.get<T>(key);
+    return this.cacheManager.get<T>(key);
   }
 
   /**
    * 캐시에 값 저장
    */
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
-    await this.cacheManager.set(key, value, ttl);
+    return this.cacheManager.set(key, value, ttl);
   }
 
   /**
    * 캐시에서 값 삭제
    */
   async del(key: string): Promise<void> {
-    await this.cacheManager.del(key);
+    return this.cacheManager.del(key);
   }
 
-  /**
-   * [미구현] 패턴 기반 키 삭제 기능 (예정)
-   */
-  delPattern(): void {
-    this.logger.warn('delPattern()은 아직 구현되지 않았습니다. 실제 동작하지 않습니다.');
+  // TODO: 패턴 기반 키 삭제 기능 추후 구현 예정
+  private delPattern(): void {
+    this.logger.warn('아직 구현되지 않았습니다.');
   }
 
   /**
