@@ -11,7 +11,7 @@ import { CacheService } from './cache.service';
       useFactory: (configService: ConfigService) => ({
         store: redisStore,
         host: configService.get('REDIS_HOST', 'localhost'),
-        port: configService.get('REDIS_PORT', 6379),
+        port: parseInt(configService.get('REDIS_PORT', '6379'), 10),
         password: configService.get('REDIS_PASSWORD'),
         ttl: 60 * 60, // 1시간 기본 TTL (초 단위)
         max: 100, // 최대 캐시 항목 수
