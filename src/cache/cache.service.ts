@@ -1,10 +1,12 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { createHash } from 'crypto';
 
 @Injectable()
 export class CacheService {
+  private readonly logger = new Logger(CacheService.name);
+
   constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
   /**
@@ -29,15 +31,10 @@ export class CacheService {
   }
 
   /**
-   * 패턴에 맞는 모든 키 삭제 (주의: Redis KEYS 명령어 사용으로 성능 주의)
+   * [미구현] 패턴 기반 키 삭제 기능 (예정)
    */
   delPattern(): void {
-    // 실제 구현에서는 Redis SCAN을 사용하는 것이 좋습니다
-    // 여기서는 기본적인 구현만 제공
-    // Redis의 경우 reset 메서드가 없으므로 개별 키 삭제 필요
-    console.warn(
-      'Pattern deletion not implemented - use individual key deletion',
-    );
+    this.logger.warn('delPattern()은 아직 구현되지 않았습니다. 실제 동작하지 않습니다.');
   }
 
   /**
