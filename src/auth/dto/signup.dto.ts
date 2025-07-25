@@ -1,24 +1,89 @@
-import { IsEmail, IsString, MinLength, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  ValidateBy,
+  ValidationOptions,
+  ValidationArguments,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
+function IsEmailRequired(validationOptions?: ValidationOptions) {
+  return ValidateBy(
+    {
+      name: 'isEmailRequired',
+      validator: {
+        validate: (value: string) => {
+          if (!value || (typeof value === 'string' && value.trim() === '')) {
+            return false;
+          }
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          return emailRegex.test(value);
+        },
+        defaultMessage: (args?: ValidationArguments) => {
+          const value = args?.value as string;
+          if (!value || (typeof value === 'string' && value.trim() === '')) {
+            return '이메일은 필수입니다.';
+          }
+          return '이메일 형식이 올바르지 않습니다';
+        },
+      },
+    },
+    validationOptions,
+  );
+}
+
+function IsPasswordRequired(validationOptions?: ValidationOptions) {
+  return ValidateBy(
+    {
+      name: 'isPasswordRequired',
+      validator: {
+        validate: (value: string) => {
+          if (!value || (typeof value === 'string' && value.trim() === '')) {
+            return false;
+          }
+          return value.length >= 8;
+        },
+        defaultMessage: (args?: ValidationArguments) => {
+          const value = args?.value as string;
+          if (!value || (typeof value === 'string' && value.trim() === '')) {
+            return '비밀번호는 필수입니다.';
+          }
+          return '비밀번호는 최소 8글자 이상이어야 합니다.';
+        },
+      },
+    },
+    validationOptions,
+  );
+}
+
 export class SignupDto {
-  @ApiProperty({ example: 'John Doe', description: 'Student name' })
+  @ApiProperty({
+    example: 'John Doe',
+    description: 'Student name',
+    maxLength: 100,
+  })
   @IsString()
   @IsNotEmpty({ message: '이름은 필수입니다.' })
+  @MaxLength(100, { message: '이름은 100글자를 초과할 수 없습니다.' })
   name: string;
 
-  @ApiProperty({ example: 'john@example.com', description: 'Student email' })
-  @IsEmail({}, { message: '이메일 형식이 올바르지 않습니다' })
-  @IsNotEmpty({ message: '이메일은 필수입니다.' })
+  @ApiProperty({
+    example: 'john@example.com',
+    description: 'Student email',
+    maxLength: 255,
+  })
+  @IsString()
+  @IsEmailRequired()
+  @MaxLength(255, { message: '이메일은 255글자를 초과할 수 없습니다.' })
   email: string;
 
   @ApiProperty({
-    example: 'password123',
-    description: 'Student password',
-    minLength: 4,
+    example: 'mypassword123',
+    description: '비밀번호 (최소 8글자 이상)',
+    minLength: 8,
   })
   @IsString()
-  @MinLength(4, { message: '비밀번호는 최소 4글자 이상이어야 합니다.' })
-  @IsNotEmpty({ message: '비밀번호는 필수입니다.' })
+  @IsPasswordRequired()
   password: string;
 }

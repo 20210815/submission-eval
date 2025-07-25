@@ -1,0 +1,231 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Req,
+  HttpCode,
+  BadRequestException,
+} from '@nestjs/common';
+import { Request } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiConsumes,
+  ApiBody,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { EssaysService } from './essays.service';
+import { SubmitEssayDto } from './dto/submit-essay.dto';
+import {
+  EssayResponseDto,
+  SubmitEssayResponseDto,
+} from './dto/essay-response.dto';
+import { ResponseUtil } from '../common/utils/response.util';
+import { FutureApiResponse } from '../common/interfaces/api-response.interface';
+import {
+  API_RESPONSE_SCHEMAS,
+  ESSAY_VALIDATION_ERROR_EXAMPLES,
+  SERVER_ERROR_EXAMPLES,
+} from '../common/constants/api-response-schemas';
+import { KoreanParseIntPipe } from '../common/pipes/korean-parse-int.pipe';
+
+@ApiTags('Essays')
+@ApiBearerAuth()
+@Controller('v1/submissions')
+@UseGuards(JwtAuthGuard)
+export class EssaysController {
+  constructor(private readonly essaysService: EssaysService) {}
+
+  @Post()
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '에세이 제출',
+    description: `
+      학생이 에세이를 제출하고 AI 평가를 받습니다.
+      
+      ## Enhanced Features (v1.1.0)
+      - **Input Validation**: 에세이 텍스트 10-10,000자 제한
+      - **File Upload**: 향상된 비디오 파일 검증 (100MB 제한)
+      - **Transaction Safety**: 데이터 일관성을 위한 트랜잭션 관리
+      - **Duplicate Prevention**: componentType별 중복 제출 방지
+      - **Concurrent Protection**: 동시 제출 방지 메커니즘
+      
+      ## 처리 과정
+      1. 입력 검증 및 중복 체크
+      2. 비디오 파일 처리 (선택사항)
+      3. Azure Storage 업로드
+      4. OpenAI API를 통한 AI 평가
+      5. 텍스트 하이라이팅 처리
+      6. 결과 저장 및 반환
+    `,
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: '에세이 제출 데이터',
+    type: SubmitEssayDto,
+  })
+  @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_SUBMIT_SUCCESS)
+  @ApiResponse(ESSAY_VALIDATION_ERROR_EXAMPLES)
+  @ApiResponse(API_RESPONSE_SCHEMAS.AUTHENTICATION_REQUIRED)
+  @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_ALREADY_SUBMITTED)
+  @ApiResponse(API_RESPONSE_SCHEMAS.CONCURRENT_SUBMISSION)
+  @ApiResponse(SERVER_ERROR_EXAMPLES)
+  @UseInterceptors(
+    FileInterceptor('video', {
+      limits: {
+        fileSize: 100 * 1024 * 1024, // 100MB
+      },
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.includes('video')) {
+          return callback(
+            new BadRequestException('비디오 파일만 업로드 가능합니다.'),
+            false,
+          );
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  async submitEssay(
+    @Req() req: Request,
+    @Body() dto: SubmitEssayDto,
+    @UploadedFile() videoFile?: Express.Multer.File,
+  ): Promise<FutureApiResponse<SubmitEssayResponseDto | null>> {
+    try {
+      const studentId = req.user?.sub;
+      if (!studentId) {
+        return ResponseUtil.createFutureApiResponse<null>(
+          '인증이 필요합니다.',
+          null,
+          'failed',
+        );
+      }
+
+      // Manual validation for empty required fields
+      if (!dto.title || dto.title.trim() === '') {
+        throw new BadRequestException('제목은 필수입니다.');
+      }
+
+      if (!dto.submitText || dto.submitText.trim() === '') {
+        throw new BadRequestException('에세이 내용은 필수입니다.');
+      }
+
+      const result = await this.essaysService.submitEssay(
+        studentId,
+        dto,
+        videoFile,
+      );
+
+      return ResponseUtil.createFutureApiResponse(
+        '에세이가 성공적으로 제출되었습니다.',
+        result,
+      );
+    } catch (error: unknown) {
+      // Re-throw HTTP exceptions to let the exception filter handle them
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      const errorMessage =
+        error instanceof Error ? error.message : '에세이 제출에 실패했습니다.';
+
+      return ResponseUtil.createFutureApiResponse<null>(
+        errorMessage,
+        null,
+        'failed',
+      );
+    }
+  }
+
+  @Get(':submissionId')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '에세이 조회',
+    description: '특정 에세이의 상세 정보를 조회합니다.',
+  })
+  @ApiParam({
+    name: 'submissionId',
+    description: '에세이 ID',
+    type: Number,
+  })
+  @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_GET_SUCCESS)
+  @ApiResponse(API_RESPONSE_SCHEMAS.INVALID_ID_FORMAT)
+  @ApiResponse(API_RESPONSE_SCHEMAS.AUTHENTICATION_REQUIRED)
+  @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_NOT_FOUND)
+  async getEssay(
+    @Req() req: Request,
+    @Param('submissionId', KoreanParseIntPipe) essayId: number,
+  ): Promise<FutureApiResponse<EssayResponseDto | null>> {
+    try {
+      const studentId = req.user?.sub;
+      if (!studentId) {
+        return ResponseUtil.createFutureApiResponse<null>(
+          '인증이 필요합니다.',
+          null,
+          'failed',
+        );
+      }
+
+      const result = await this.essaysService.getEssay(essayId, studentId);
+
+      return ResponseUtil.createFutureApiResponse(
+        '에세이 조회에 성공했습니다.',
+        result,
+      );
+    } catch (error) {
+      return ResponseUtil.createFutureApiResponse<null>(
+        error instanceof Error ? error.message : '에세이 조회에 실패했습니다.',
+        null,
+        'failed',
+      );
+    }
+  }
+
+  @Get()
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '학생 에세이 목록 조회',
+    description: '현재 로그인한 학생의 모든 에세이 목록을 조회합니다.',
+  })
+  @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_LIST_SUCCESS)
+  @ApiResponse(API_RESPONSE_SCHEMAS.AUTHENTICATION_REQUIRED)
+  async getStudentEssays(
+    @Req() req: Request,
+  ): Promise<FutureApiResponse<EssayResponseDto[] | null>> {
+    try {
+      const studentId = req.user?.sub;
+      if (!studentId) {
+        return ResponseUtil.createFutureApiResponse<null>(
+          '인증이 필요합니다.',
+          null,
+          'failed',
+        );
+      }
+
+      const result = await this.essaysService.getStudentEssays(studentId);
+
+      return ResponseUtil.createFutureApiResponse(
+        '에세이 목록 조회에 성공했습니다.',
+        result,
+      );
+    } catch (error) {
+      return ResponseUtil.createFutureApiResponse<null>(
+        error instanceof Error
+          ? error.message
+          : '에세이 목록 조회에 실패했습니다.',
+        null,
+        'failed',
+      );
+    }
+  }
+}

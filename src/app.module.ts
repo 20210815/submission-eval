@@ -1,6 +1,7 @@
 import { AuthModule } from './auth/auth.module';
 import { StudentsModule } from './students/students.module';
 import { HealthModule } from './health/health.module';
+import { EssaysModule } from './essays/essays.module';
 import { Module, MiddlewareConsumer } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -14,6 +15,7 @@ import { AppService } from './app.service';
     AuthModule,
     StudentsModule,
     HealthModule,
+    EssaysModule,
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule.forRoot({
       pinoHttp: {
@@ -33,7 +35,8 @@ import { AppService } from './app.service';
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
       entities: [__dirname + '/**/*.entity.{ts,js}'],
-      synchronize: true,
+      synchronize: process.env.NODE_ENV !== 'production', // 프로덕션에서는 동기화 비활성화
+      logging: process.env.NODE_ENV === 'development' ? true : ['error'], // 개발환경에서만 전체 로깅
     }),
   ],
   controllers: [AppController],

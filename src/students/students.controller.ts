@@ -4,17 +4,15 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
-  ApiCookieAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('Students')
-@Controller('students')
+@Controller('v1/students')
 export class StudentsController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiCookieAuth('token')
   @ApiOperation({ summary: 'Get all students' })
   @ApiResponse({ status: 200, description: 'List of students' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })

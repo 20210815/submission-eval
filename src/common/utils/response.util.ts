@@ -1,24 +1,27 @@
 import { HttpStatus } from '@nestjs/common';
-import { 
-  ApiErrorResponse, 
-  ApiSuccessResponse, 
-  StandardErrorResponse, 
+import {
+  ApiErrorResponse,
+  ApiSuccessResponse,
+  StandardErrorResponse,
   StandardSuccessResponse,
-  FutureApiResponse
+  FutureApiResponse,
 } from '../interfaces/api-response.interface';
 
 export class ResponseUtil {
   static createErrorResponse(
     exceptionResponse: string | object,
   ): ApiErrorResponse {
-    const message =
+    const messageArray =
       typeof exceptionResponse === 'string'
-        ? exceptionResponse
-        : (exceptionResponse as any).message || '오류가 발생했습니다';
+        ? [exceptionResponse]
+        : this.extractMessageAsArray(exceptionResponse);
 
     return {
       result: 'failed',
-      message: Array.isArray(message) ? message[0] : message,
+      message:
+        messageArray.length > 1
+          ? messageArray
+          : messageArray[0] || '오류가 발생했습니다',
       timestamp: new Date().toISOString(),
     };
   }
@@ -39,15 +42,18 @@ export class ResponseUtil {
     exceptionResponse: string | object,
     status: number,
   ): StandardErrorResponse {
-    const message =
+    const messageArray =
       typeof exceptionResponse === 'string'
-        ? exceptionResponse
-        : (exceptionResponse as any).message || '오류가 발생했습니다';
+        ? [exceptionResponse]
+        : this.extractMessageAsArray(exceptionResponse);
 
     return {
       success: false,
       statusCode: status,
-      message: Array.isArray(message) ? message[0] : message,
+      message:
+        messageArray.length > 1
+          ? messageArray
+          : messageArray[0] || '오류가 발생했습니다',
       timestamp: new Date().toISOString(),
     };
   }
@@ -66,31 +72,48 @@ export class ResponseUtil {
     };
   }
 
-  static createFutureApiResponse(
+  static createFutureApiResponse<T = any>(
     message: string,
-    studentId: number,
-    additionalData?: {
-      score?: number;
-      feedback?: string;
-      highlights?: string[];
-      submitText?: string;
-      highlightSubmitText?: string;
-    }
-  ): FutureApiResponse {
-    return {
-      result: 'ok',
+    data?: T,
+    result: 'ok' | 'failed' = 'ok',
+  ): FutureApiResponse<T> {
+    const response: FutureApiResponse<T> = {
+      result,
       message,
-      studentId,
-      ...additionalData,
     };
+
+    if (data !== null && data !== undefined) {
+      (response as FutureApiResponse<T> & { data: T }).data = data;
+    }
+
+    return response;
   }
 
   static createFutureApiErrorResponse(
     message: string | string[],
-  ): Omit<FutureApiResponse, 'studentId'> {
+  ): FutureApiResponse<null> {
+    const messageArray = Array.isArray(message) ? message.flat() : [message];
     return {
-      result: 'error',
-      message,
+      result: 'failed',
+      message: messageArray,
     };
+  }
+
+  private static extractMessageAsArray(exceptionResponse: object): string[] {
+    if (exceptionResponse && typeof exceptionResponse === 'object') {
+      if ('message' in exceptionResponse) {
+        const msg = exceptionResponse.message;
+        if (
+          Array.isArray(msg) &&
+          msg.every((item) => typeof item === 'string')
+        ) {
+          return msg;
+        }
+        if (typeof msg === 'string') {
+          return [msg];
+        }
+      }
+    }
+    return ['오류가 발생했습니다'];
   }
 }

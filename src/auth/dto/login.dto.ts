@@ -8,12 +8,13 @@ export class LoginDto {
   email: string;
 
   @ApiProperty({
-    example: 'password123',
-    description: 'Student password',
-    minLength: 4,
+    example: 'SecurePass123!',
+    description:
+      'Student password (minimum 8 characters with complexity requirements)',
+    minLength: 8,
   })
   @IsString()
-  @MinLength(4, { message: '비밀번호는 최소 4글자 이상이어야 합니다.' })
+  @MinLength(8, { message: '비밀번호는 최소 8글자 이상이어야 합니다.' })
   @IsNotEmpty({ message: '비밀번호는 필수입니다.' })
   password: string;
 }
