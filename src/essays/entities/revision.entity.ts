@@ -33,7 +33,12 @@ export class Revision {
   @Column({ name: 'student_id' })
   studentId: number;
 
-  @Column({ name: 'component_type', type: 'enum', enum: ComponentType })
+  @Column({
+    name: 'component_type',
+    type: 'enum',
+    enum: ComponentType,
+    enumName: 'component_type_enum',
+  })
   componentType: ComponentType;
 
   @Column({ name: 'revision_reason', type: 'text', nullable: true })
