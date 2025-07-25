@@ -20,14 +20,14 @@ export class CacheService {
    * 캐시에 값 저장
    */
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
-    return this.cacheManager.set(key, value, ttl);
+    await this.cacheManager.set(key, value, ttl);
   }
 
   /**
    * 캐시에서 값 삭제
    */
   async del(key: string): Promise<void> {
-    return this.cacheManager.del(key);
+    await this.cacheManager.del(key);
   }
 
   // TODO: 패턴 기반 키 삭제 기능 추후 구현 예정
