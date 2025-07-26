@@ -117,8 +117,8 @@ export class OpenAIService {
     - Relevance to the topic
     - Overall communication effectiveness
 
-    The highlights should contain key phrases or sentences that demonstrate good language use or areas that need improvement.
-    Provide feedback in Korean language.
+    The highlights should be selected only from the student's original submission content, and should not be invented or taken from the feedback.
+    Ensure the score is a number between 0 and 10, with 10 being the highest quality submission.
     `;
   }
 

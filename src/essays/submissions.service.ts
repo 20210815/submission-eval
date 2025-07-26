@@ -40,7 +40,7 @@ interface AIEvaluationResult {
 @Injectable()
 export class SubmissionsService {
   private readonly logger = new Logger(SubmissionsService.name);
-  private readonly processingStudents = new Set<string>();
+  private readonly processingLocks = new Map<string, Promise<any>>();
 
   constructor(
     @InjectRepository(Submission)
@@ -69,85 +69,90 @@ export class SubmissionsService {
     const processingKey = `${studentId}-${dto.componentType}`;
 
     // 동시 제출 방지 체크 (같은 componentType에 대해서만)
-    if (this.processingStudents.has(processingKey)) {
+    if (this.processingLocks.has(processingKey)) {
       throw new ConflictException(
         `이미 ${dto.componentType} 유형의 에세이 제출이 진행 중입니다. 잠시 후 다시 시도해주세요.`,
       );
     }
 
-    this.processingStudents.add(processingKey);
+    // 비동기 작업을 캡슐화하는 Promise 생성
+    const processingPromise = (async () => {
+      // 트랜잭션 내에서 제출물 생성 및 초기 처리
+      const savedSubmission = await this.dataSource.transaction(
+        async (manager) => {
+          // componentType별 중복 제출 방지 체크
+          const existingSubmission = await manager.findOne(Submission, {
+            where: {
+              studentId,
+              componentType: dto.componentType,
+            },
+          });
 
-    // 트랜잭션 내에서 제출물 생성 및 초기 처리
-    const savedSubmission = await this.dataSource.transaction(
-      async (manager) => {
-        // componentType별 중복 제출 방지 체크
-        const existingSubmission = await manager.findOne(Submission, {
-          where: {
-            studentId,
+          if (existingSubmission) {
+            throw new ConflictException(
+              `이미 ${dto.componentType} 유형의 에세이를 제출했습니다.`,
+            );
+          }
+
+          // 새 제출물 생성
+          const submission = manager.create(Submission, {
+            title: dto.title,
+            submitText: dto.submitText,
             componentType: dto.componentType,
-          },
+            studentId,
+            status: EvaluationStatus.PENDING,
+          });
+
+          return await manager.save(Submission, submission);
+        },
+      );
+
+      try {
+        // 동기 평가 프로세스 실행 (트랜잭션 외부에서 실행)
+        await this.processSubmissionEvaluation(savedSubmission.id, videoFile);
+
+        // 평가 완료 후 결과 조회
+        const evaluatedSubmission = await this.submissionRepository.findOne({
+          where: { id: savedSubmission.id },
         });
 
-        if (existingSubmission) {
-          throw new ConflictException(
-            `이미 ${dto.componentType} 유형의 에세이를 제출했습니다.`,
-          );
+        if (!evaluatedSubmission) {
+          throw new Error('평가된 제출물을 찾을 수 없습니다.');
         }
 
-        // 새 제출물 생성
-        const submission = manager.create(Submission, {
-          title: dto.title,
-          submitText: dto.submitText,
-          componentType: dto.componentType,
-          studentId,
-          status: EvaluationStatus.PENDING,
-        });
+        // 학생 정보 조회 (캐시 적용)
+        const student = await this.getStudentWithCache(studentId);
 
-        return await manager.save(Submission, submission);
-      },
-    );
+        const apiLatency = Date.now() - startTime;
 
-    try {
-      // 동기 평가 프로세스 실행 (트랜잭션 외부에서 실행)
-      await this.processSubmissionEvaluation(savedSubmission.id, videoFile);
-
-      // 평가 완료 후 결과 조회
-      const evaluatedSubmission = await this.submissionRepository.findOne({
-        where: { id: savedSubmission.id },
-      });
-
-      if (!evaluatedSubmission) {
-        throw new Error('평가된 제출물을 찾을 수 없습니다.');
+        return {
+          submissionId: evaluatedSubmission.id,
+          studentId: studentId,
+          studentName: student?.name,
+          status: evaluatedSubmission.status,
+          message:
+            evaluatedSubmission.status === EvaluationStatus.COMPLETED
+              ? null
+              : evaluatedSubmission.errorMessage ||
+                '제출물 평가에 실패했습니다.',
+          score: evaluatedSubmission.score ?? undefined,
+          feedback: evaluatedSubmission.feedback ?? undefined,
+          highlights: evaluatedSubmission.highlights ?? undefined,
+          submitText: evaluatedSubmission.submitText,
+          highlightSubmitText:
+            evaluatedSubmission.highlightSubmitText ?? undefined,
+          videoUrl: evaluatedSubmission.videoUrl ?? undefined,
+          audioUrl: evaluatedSubmission.audioUrl ?? undefined,
+          apiLatency,
+        };
+      } finally {
+        // 처리 완료 후 processing key 제거
+        this.processingLocks.delete(processingKey);
       }
+    })(); // Immediately invoke the async function
 
-      // 학생 정보 조회 (캐시 적용)
-      const student = await this.getStudentWithCache(studentId);
-
-      const apiLatency = Date.now() - startTime;
-
-      return {
-        submissionId: evaluatedSubmission.id,
-        studentId: studentId,
-        studentName: student?.name,
-        status: evaluatedSubmission.status,
-        message:
-          evaluatedSubmission.status === EvaluationStatus.COMPLETED
-            ? null
-            : evaluatedSubmission.errorMessage || '제출물 평가에 실패했습니다.',
-        score: evaluatedSubmission.score ?? undefined,
-        feedback: evaluatedSubmission.feedback ?? undefined,
-        highlights: evaluatedSubmission.highlights ?? undefined,
-        submitText: evaluatedSubmission.submitText,
-        highlightSubmitText:
-          evaluatedSubmission.highlightSubmitText ?? undefined,
-        videoUrl: evaluatedSubmission.videoUrl ?? undefined,
-        audioUrl: evaluatedSubmission.audioUrl ?? undefined,
-        apiLatency,
-      };
-    } finally {
-      // 처리 완료 후 processing key 제거
-      this.processingStudents.delete(processingKey);
-    }
+    this.processingLocks.set(processingKey, processingPromise);
+    return processingPromise;
   }
 
   async getSubmission(
@@ -509,6 +514,14 @@ export class SubmissionsService {
     }
 
     await this.submissionRepository.update(submissionId, updateData);
+
+    // Cache invalidation
+    const submission = await this.submissionRepository.findOne({
+      where: { id: submissionId },
+    });
+    if (submission) {
+      await this.invalidateSubmissionCache(submission.id, submission.studentId);
+    }
   }
 
   private async createRevisionForFailedSubmission(
@@ -611,7 +624,7 @@ export class SubmissionsService {
     // 캐시에서 조회
     const cachedSubmission = await this.cacheService.get<Submission>(cacheKey);
 
-    if (cachedSubmission) {
+    if (cachedSubmission && cachedSubmission.studentId === studentId) {
       return cachedSubmission;
     }
 

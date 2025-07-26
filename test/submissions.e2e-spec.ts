@@ -315,8 +315,8 @@ describe('Submissions (e2e)', () => {
         result: 'ok',
         data: {
           id: submissionId,
-          title: '테스트 에세이',
-          submitText: '테스트 에세이 내용',
+          title: '테스트 제출물',
+          submitText: '테스트 제출물 내용',
           componentType: ComponentType.WRITING,
           status: EvaluationStatus.COMPLETED,
           score: 85,
