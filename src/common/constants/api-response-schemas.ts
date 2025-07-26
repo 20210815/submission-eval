@@ -129,6 +129,96 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
+  // 전체 제출물 목록 조회 성공
+  ALL_SUBMISSIONS_SUCCESS: {
+    status: 200,
+    description: '전체 제출물 목록 조회 성공',
+    schema: {
+      example: {
+        result: 'ok',
+        message: '전체 제출물 목록 조회에 성공했습니다.',
+        data: {
+          data: [
+            {
+              id: 1,
+              title: 'English Essay',
+              submitText: 'This is my submission about...',
+              componentType: 'writing',
+              status: 'completed',
+              score: 85,
+              feedback: '문법과 구조가 우수합니다.',
+              highlights: ['excellent vocabulary', 'good grammar'],
+              highlightSubmitText:
+                'This is my submission with <b>excellent vocabulary</b>...',
+              videoUrl: 'https://storage.example.com/videos/submission1.mp4',
+              audioUrl: 'https://storage.example.com/audios/submission1.mp3',
+              createdAt: '2025-07-26T14:10:26.827Z',
+              updatedAt: '2025-07-26T14:10:29.983Z',
+              student: {
+                id: 123,
+                name: '홍길동',
+              },
+            },
+          ],
+          total: 150,
+          totalPages: 8,
+          currentPage: 1,
+          pageSize: 20,
+          hasNext: true,
+          hasPrevious: false,
+        },
+      },
+    },
+  },
+
+  // 400 Bad Request - 잘못된 페이지 파라미터
+  INVALID_PAGE_PARAMETER: {
+    status: 400,
+    description: '잘못된 페이지 파라미터',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '페이지 번호는 1 이상이어야 합니다.',
+      },
+    },
+  },
+
+  // 400 Bad Request - 잘못된 정렬 파라미터
+  INVALID_SORT_PARAMETER: {
+    status: 400,
+    description: '잘못된 정렬 파라미터',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '유효하지 않은 정렬 기준입니다.',
+      },
+    },
+  },
+
+  // 400 Bad Request - 잘못된 상태 필터
+  INVALID_STATUS_FILTER: {
+    status: 400,
+    description: '잘못된 평가 상태 필터',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '유효한 평가 상태를 선택해주세요.',
+      },
+    },
+  },
+
+  // 400 Bad Request - 잘못된 학생 ID 형식
+  INVALID_STUDENT_ID_FORMAT: {
+    status: 400,
+    description: '잘못된 학생 ID 형식',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '학생 ID는 숫자여야 합니다.',
+      },
+    },
+  },
+
   // 400 Bad Request - 단일 validation 에러
   EMAIL_FORMAT_ERROR: {
     status: 400,
@@ -477,6 +567,34 @@ export const API_RESPONSE_SCHEMAS = {
   },
 };
 
+// All submissions query validation error examples
+export const ALL_SUBMISSIONS_VALIDATION_ERROR_EXAMPLES = {
+  status: 400,
+  description: '전체 제출물 조회 유효성 검사 오류 응답',
+  content: {
+    'application/json': {
+      examples: {
+        invalidPageParameter: {
+          summary: API_RESPONSE_SCHEMAS.INVALID_PAGE_PARAMETER.description,
+          value: API_RESPONSE_SCHEMAS.INVALID_PAGE_PARAMETER.schema.example,
+        },
+        invalidSortParameter: {
+          summary: API_RESPONSE_SCHEMAS.INVALID_SORT_PARAMETER.description,
+          value: API_RESPONSE_SCHEMAS.INVALID_SORT_PARAMETER.schema.example,
+        },
+        invalidStatusFilter: {
+          summary: API_RESPONSE_SCHEMAS.INVALID_STATUS_FILTER.description,
+          value: API_RESPONSE_SCHEMAS.INVALID_STATUS_FILTER.schema.example,
+        },
+        invalidStudentIdFormat: {
+          summary: API_RESPONSE_SCHEMAS.INVALID_STUDENT_ID_FORMAT.description,
+          value: API_RESPONSE_SCHEMAS.INVALID_STUDENT_ID_FORMAT.schema.example,
+        },
+      },
+    },
+  },
+};
+
 // Submission validation error examples
 export const SUBMISSION_VALIDATION_ERROR_EXAMPLES = {
   status: 400,
@@ -597,6 +715,34 @@ export const VALIDATION_ERROR_EXAMPLES = {
         emailLengthError: {
           summary: API_RESPONSE_SCHEMAS.EMAIL_LENGTH_ERROR.description,
           value: API_RESPONSE_SCHEMAS.EMAIL_LENGTH_ERROR.schema.example,
+        },
+      },
+    },
+  },
+};
+
+// All submissions error schemas export
+export const ALL_SUBMISSIONS_ERROR_EXAMPLES = {
+  status: 400,
+  description: '유효성 검사 오류 응답',
+  content: {
+    'application/json': {
+      examples: {
+        invalidPageParameter: {
+          summary: API_RESPONSE_SCHEMAS.INVALID_PAGE_PARAMETER.description,
+          value: API_RESPONSE_SCHEMAS.INVALID_PAGE_PARAMETER.schema.example,
+        },
+        invalidSortParameter: {
+          summary: API_RESPONSE_SCHEMAS.INVALID_SORT_PARAMETER.description,
+          value: API_RESPONSE_SCHEMAS.INVALID_SORT_PARAMETER.schema.example,
+        },
+        invalidStatusFilter: {
+          summary: API_RESPONSE_SCHEMAS.INVALID_STATUS_FILTER.description,
+          value: API_RESPONSE_SCHEMAS.INVALID_STATUS_FILTER.schema.example,
+        },
+        invalidStudentIdFormat: {
+          summary: API_RESPONSE_SCHEMAS.INVALID_STUDENT_ID_FORMAT.description,
+          value: API_RESPONSE_SCHEMAS.INVALID_STUDENT_ID_FORMAT.schema.example,
         },
       },
     },

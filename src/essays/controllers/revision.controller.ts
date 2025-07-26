@@ -19,7 +19,10 @@ import {
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { RevisionService } from '../services/revision.service';
 import { CreateRevisionDto, RevisionResponseDto } from '../dto/revision.dto';
-import { API_RESPONSE_SCHEMAS } from '../../common/constants/api-response-schemas';
+import {
+  API_RESPONSE_SCHEMAS,
+  ALL_SUBMISSIONS_ERROR_EXAMPLES,
+} from '../../common/constants/api-response-schemas';
 
 @ApiTags('Revisions')
 @ApiBearerAuth()
@@ -53,6 +56,7 @@ export class RevisionController {
     summary: '재평가 목록 조회',
     description: '페이지네이션과 정렬을 지원하는 재평가 목록을 조회합니다.',
   })
+  @ApiResponse(ALL_SUBMISSIONS_ERROR_EXAMPLES)
   @ApiQuery({
     name: 'page',
     required: false,
