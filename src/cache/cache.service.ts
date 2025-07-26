@@ -64,15 +64,15 @@ export class CacheService {
   /**
    * 학생 에세이 목록 캐시 키 생성
    */
-  getStudentEssaysKey(studentId: number): string {
-    return `student-essays:${studentId}`;
+  getStudentSubmissionsKey(studentId: number): string {
+    return `student-submissions:${studentId}`;
   }
 
   /**
-   * 에세이 상세 정보 캐시 키 생성
+   * 제출물 상세 정보 캐시 키 생성
    */
-  getEssayKey(essayId: number): string {
-    return `essay:${essayId}`;
+  getSubmissionKey(submissionId: number): string {
+    return `submission:${submissionId}`;
   }
 
   /**

@@ -4,7 +4,7 @@ import axios from 'axios';
 
 interface NotificationData {
   type: string;
-  essayId: number;
+  submissionId: number;
   studentId: number;
   errorMessage: string;
   traceId: string;
@@ -19,7 +19,7 @@ export class NotificationService {
   constructor(private configService: ConfigService) {}
 
   async notifyEvaluationFailure(
-    essayId: number,
+    submissionId: number,
     studentId: number,
     errorMessage: string,
     traceId?: string,
@@ -28,7 +28,7 @@ export class NotificationService {
       this.logger.log(
         '🔔 NotificationService.notifyEvaluationFailure called:',
         {
-          essayId,
+          submissionId,
           studentId,
           errorMessage,
           traceId,
@@ -37,8 +37,8 @@ export class NotificationService {
     }
 
     const notificationData: NotificationData = {
-      type: 'ESSAY_EVALUATION_FAILED',
-      essayId,
+      type: 'SUBMISSION_EVALUATION_FAILED',
+      submissionId,
       studentId,
       errorMessage,
       traceId: traceId || 'unknown',
@@ -68,13 +68,13 @@ export class NotificationService {
     }
 
     const message = {
-      text: '🚨 에세이 평가 시스템 오류 발생',
+      text: '🚨 제출물 평가 시스템 오류 발생',
       blocks: [
         {
           type: 'header',
           text: {
             type: 'plain_text',
-            text: '🚨 에세이 평가 실패 알림',
+            text: '🚨 제출물 평가 실패 알림',
           },
         },
         {
@@ -82,7 +82,7 @@ export class NotificationService {
           fields: [
             {
               type: 'mrkdwn',
-              text: `*Essay ID:* ${data.essayId}`,
+              text: `*Submission ID:* ${data.submissionId}`,
             },
             {
               type: 'mrkdwn',

@@ -101,7 +101,7 @@ describe('Auth Controller (e2e)', () => {
       const body = response.body as AuthErrorResponse;
       expect(body).toEqual({
         result: 'failed',
-        message: ['이메일 형식이 올바르지 않습니다'],
+        message: '이메일 형식이 올바르지 않습니다',
       });
     });
 
@@ -116,9 +116,9 @@ describe('Auth Controller (e2e)', () => {
 
       const body = response.body as AuthErrorResponse;
       expect(body.result).toBe('failed');
-      expect(Array.isArray(body.message)).toBe(true);
+      expect(typeof body.message).toBe('string');
       // 새로운 비밀번호 정책에 따른 여러 검증 오류 메시지 확인
-      if (Array.isArray(body.message)) {
+      if (typeof body.message === 'string') {
         expect(body.message).toContain(
           '비밀번호는 최소 8글자 이상이어야 합니다.',
         );
@@ -157,7 +157,7 @@ describe('Auth Controller (e2e)', () => {
       const body = response.body as AuthErrorResponse;
       expect(body).toEqual({
         result: 'failed',
-        message: ['이미 존재하는 이메일입니다'],
+        message: '이미 존재하는 이메일입니다',
       });
     });
 
@@ -213,7 +213,7 @@ describe('Auth Controller (e2e)', () => {
       const body = response.body as AuthErrorResponse;
       expect(body).toEqual({
         result: 'failed',
-        message: ['사용자를 찾을 수 없습니다'],
+        message: '사용자를 찾을 수 없습니다',
       });
     });
 
@@ -229,7 +229,7 @@ describe('Auth Controller (e2e)', () => {
       const body = response.body as AuthErrorResponse;
       expect(body).toEqual({
         result: 'failed',
-        message: ['비밀번호가 일치하지 않습니다'],
+        message: '비밀번호가 일치하지 않습니다',
       });
     });
 
@@ -244,7 +244,8 @@ describe('Auth Controller (e2e)', () => {
 
       const body = response.body as AuthErrorResponse;
       expect(body.result).toBe('failed');
-      expect(Array.isArray(body.message)).toBe(true);
+      expect(typeof body.message).toBe('string');
+      expect(body.message).toContain('유효한 이메일 주소를 입력해주세요.');
     });
 
     it('should return 400 for missing credentials', async () => {

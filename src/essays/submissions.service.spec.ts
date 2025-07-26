@@ -2,12 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { EssaysService } from './essays.service';
-import {
-  Essay,
-  ComponentType,
-  EvaluationStatus,
-} from './entities/essay.entity';
+import { SubmissionsService } from './submissions.service';
+import { Submission, EvaluationStatus } from './entities/submission.entity';
 import { EvaluationLog } from './entities/evaluation-log.entity';
 import { Student } from '../students/entities/student.entity';
 import { VideoProcessingService } from './services/video-processing.service';
@@ -15,13 +11,15 @@ import { AzureStorageService } from './services/azure-storage.service';
 import { OpenAIService } from './services/openai.service';
 import { TextHighlightingService } from './services/text-highlighting.service';
 import { NotificationService } from './services/notification.service';
-import { SubmitEssayDto } from './dto/submit-essay.dto';
+import { SubmitSubmissionDto } from './dto/submit-submission.dto';
 import { CacheService } from '../cache/cache.service';
+import { ComponentType } from './enums/component-type.enum';
+import { Revision } from './entities/revision.entity';
 
-describe('EssaysService', () => {
-  let service: EssaysService;
+describe('SubmissionsService', () => {
+  let service: SubmissionsService;
 
-  const mockEssayRepository = {
+  const mockSubmissionRepository = {
     create: jest.fn(),
     save: jest.fn(),
     findOne: jest.fn(),
@@ -39,6 +37,13 @@ describe('EssaysService', () => {
     findOne: jest.fn(),
   };
 
+  const mockRevisionRepository = {
+    create: jest.fn(),
+    save: jest.fn(),
+    findOne: jest.fn(),
+    find: jest.fn(),
+  };
+
   const mockVideoProcessingService = {
     processVideo: jest.fn(),
     cleanupProcessedFiles: jest.fn(),
@@ -50,7 +55,7 @@ describe('EssaysService', () => {
   };
 
   const mockOpenAIService = {
-    evaluateEssay: jest.fn(),
+    evaluateSubmission: jest.fn(),
   };
 
   const mockTextHighlightingService = {
@@ -66,8 +71,8 @@ describe('EssaysService', () => {
     set: jest.fn(),
     del: jest.fn(),
     getStudentKey: jest.fn(),
-    getStudentEssaysKey: jest.fn(),
-    getEssayKey: jest.fn(),
+    getStudentSubmissionsKey: jest.fn(),
+    getSubmissionKey: jest.fn(),
   };
 
   const mockDataSource = {
@@ -80,10 +85,10 @@ describe('EssaysService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        EssaysService,
+        SubmissionsService,
         {
-          provide: getRepositoryToken(Essay),
-          useValue: mockEssayRepository,
+          provide: getRepositoryToken(Submission),
+          useValue: mockSubmissionRepository,
         },
         {
           provide: getRepositoryToken(EvaluationLog),
@@ -92,6 +97,10 @@ describe('EssaysService', () => {
         {
           provide: getRepositoryToken(Student),
           useValue: mockStudentRepository,
+        },
+        {
+          provide: getRepositoryToken(Revision),
+          useValue: mockRevisionRepository,
         },
         {
           provide: VideoProcessingService,
@@ -124,7 +133,7 @@ describe('EssaysService', () => {
       ],
     }).compile();
 
-    service = module.get<EssaysService>(EssaysService);
+    service = module.get<SubmissionsService>(SubmissionsService);
   });
 
   afterEach(() => {
@@ -135,26 +144,32 @@ describe('EssaysService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('submitEssay', () => {
+  describe('submitSubmission', () => {
     const studentId = 1;
-    const submitEssayDto: SubmitEssayDto = {
-      title: '테스트 에세이',
+    const submitSubmissionDto: SubmitSubmissionDto = {
+      title: '테스트 제출물',
       submitText: '테스트 내용입니다.',
       componentType: ComponentType.WRITING,
     };
 
     beforeEach(() => {
       // Mock successful flow
-      mockEssayRepository.findOne.mockResolvedValue(null);
-      mockEssayRepository.create.mockReturnValue({ id: 1, ...submitEssayDto });
-      mockEssayRepository.save.mockResolvedValue({ id: 1, ...submitEssayDto });
+      mockSubmissionRepository.findOne.mockResolvedValue(null);
+      mockSubmissionRepository.create.mockReturnValue({
+        id: 1,
+        ...submitSubmissionDto,
+      });
+      mockSubmissionRepository.save.mockResolvedValue({
+        id: 1,
+        ...submitSubmissionDto,
+      });
       mockStudentRepository.findOne.mockResolvedValue({
         id: studentId,
         name: '테스트학생',
       });
 
-      mockOpenAIService.evaluateEssay.mockResolvedValue({
-        score: 85,
+      mockOpenAIService.evaluateSubmission.mockResolvedValue({
+        score: 8,
         feedback: '좋은 에세이입니다.',
         highlights: ['좋은', '에세이'],
       });
@@ -170,16 +185,20 @@ describe('EssaysService', () => {
       mockDataSource.transaction.mockImplementation(
         async (callback: (manager: any) => Promise<any>) => {
           const mockManager = {
-            findOne: jest.fn().mockResolvedValue(null), // No existing essay in transaction
-            save: jest.fn().mockResolvedValue({ id: 1, ...submitEssayDto }),
-            create: jest.fn().mockReturnValue({ id: 1, ...submitEssayDto }),
+            findOne: jest.fn().mockResolvedValue(null), // No existing submission in transaction
+            save: jest
+              .fn()
+              .mockResolvedValue({ id: 1, ...submitSubmissionDto }),
+            create: jest
+              .fn()
+              .mockReturnValue({ id: 1, ...submitSubmissionDto }),
           };
           // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           return await callback(mockManager);
         },
       );
 
-      // Mock cache methods for student and essay caching
+      // Mock cache methods for student and submission caching
       mockCacheService.getStudentKey.mockReturnValue(`student:${studentId}`);
       mockCacheService.get.mockResolvedValue(null); // No cached data
       mockCacheService.set.mockResolvedValue(undefined);
@@ -187,9 +206,9 @@ describe('EssaysService', () => {
 
     it('should submit essay successfully without video', async () => {
       // Mock the essay repository call to get the evaluated essay (after evaluation)
-      mockEssayRepository.findOne.mockResolvedValue({
+      mockSubmissionRepository.findOne.mockResolvedValue({
         id: 1,
-        ...submitEssayDto,
+        ...submitSubmissionDto,
         studentId,
         status: EvaluationStatus.COMPLETED,
         score: 85,
@@ -199,22 +218,25 @@ describe('EssaysService', () => {
           '테스트 내용입니다. <mark>좋은</mark> <mark>에세이</mark>',
       });
 
-      const result = await service.submitEssay(studentId, submitEssayDto);
+      const result = await service.submitSubmission(
+        studentId,
+        submitSubmissionDto,
+      );
 
       expect(result).toMatchObject({
-        essayId: 1,
+        submissionId: 1,
         studentId,
         studentName: '테스트학생',
         status: EvaluationStatus.COMPLETED,
         score: 85,
         feedback: '좋은 에세이입니다.',
         highlights: ['좋은', '에세이'],
-        submitText: submitEssayDto.submitText,
+        submitText: submitSubmissionDto.submitText,
         highlightSubmitText: expect.stringContaining('<mark>') as string,
         apiLatency: expect.any(Number) as number,
       });
 
-      expect(mockOpenAIService.evaluateEssay).toHaveBeenCalled();
+      expect(mockOpenAIService.evaluateSubmission).toHaveBeenCalled();
       expect(mockTextHighlightingService.highlightText).toHaveBeenCalled();
     });
 
@@ -237,18 +259,18 @@ describe('EssaysService', () => {
       );
 
       await expect(
-        service.submitEssay(studentId, submitEssayDto),
+        service.submitSubmission(studentId, submitSubmissionDto),
       ).rejects.toThrow(ConflictException);
     });
 
     it('should throw ConflictException when student is already processing', async () => {
       // Start first submission
-      const promise1 = service.submitEssay(studentId, submitEssayDto);
+      const promise1 = service.submitSubmission(studentId, submitSubmissionDto);
 
-      // Try second submission immediately
-      const promise2 = service.submitEssay(studentId, {
-        ...submitEssayDto,
-        componentType: ComponentType.SPEAKING,
+      // Try second submission immediately with same componentType
+      const promise2 = service.submitSubmission(studentId, {
+        ...submitSubmissionDto,
+        title: '다른 제목',
       });
 
       const results = await Promise.allSettled([promise1, promise2]);
@@ -288,18 +310,18 @@ describe('EssaysService', () => {
       });
 
       // Mock the essay repository call to get the evaluated essay (after evaluation)
-      mockEssayRepository.findOne.mockResolvedValue({
+      mockSubmissionRepository.findOne.mockResolvedValue({
         id: 1,
-        ...submitEssayDto,
+        ...submitSubmissionDto,
         studentId,
         status: EvaluationStatus.COMPLETED,
         videoUrl: 'https://example.com/video.mp4',
         audioUrl: 'https://example.com/audio.wav',
       });
 
-      const result = await service.submitEssay(
+      const result = await service.submitSubmission(
         studentId,
-        submitEssayDto,
+        submitSubmissionDto,
         mockVideoFile,
       );
 
@@ -313,13 +335,13 @@ describe('EssaysService', () => {
     });
   });
 
-  describe('getEssay', () => {
-    const essayId = 1;
+  describe('getSubmission', () => {
+    const submissionId = 1;
     const studentId = 1;
 
-    it('should get essay successfully', async () => {
-      const mockEssay = {
-        id: essayId,
+    it('should get submission successfully', async () => {
+      const mockSubmission = {
+        id: submissionId,
         title: '테스트 에세이',
         submitText: '테스트 내용',
         componentType: ComponentType.WRITING,
@@ -331,48 +353,52 @@ describe('EssaysService', () => {
         updatedAt: new Date(),
       };
 
-      // Mock cache service - no cached essay
+      // Mock cache service - no cached submission
       mockCacheService.get.mockResolvedValue(null);
       mockCacheService.set.mockResolvedValue(undefined);
-      mockCacheService.getEssayKey.mockReturnValue(`essay:${essayId}`);
+      mockCacheService.getSubmissionKey.mockReturnValue(
+        `submission:${submissionId}`,
+      );
 
-      mockEssayRepository.findOne.mockResolvedValue(mockEssay);
+      mockSubmissionRepository.findOne.mockResolvedValue(mockSubmission);
 
-      const result = await service.getEssay(essayId, studentId);
+      const result = await service.getSubmission(submissionId, studentId);
 
-      expect(mockEssayRepository.findOne).toHaveBeenCalledWith({
-        where: { id: essayId, studentId },
+      expect(mockSubmissionRepository.findOne).toHaveBeenCalledWith({
+        where: { id: submissionId, studentId },
       });
       expect(result).toMatchObject({
-        id: essayId,
-        title: mockEssay.title,
-        submitText: mockEssay.submitText,
-        componentType: mockEssay.componentType,
-        status: mockEssay.status,
-        score: mockEssay.score,
-        feedback: mockEssay.feedback,
-        highlights: mockEssay.highlights,
+        id: submissionId,
+        title: mockSubmission.title,
+        submitText: mockSubmission.submitText,
+        componentType: mockSubmission.componentType,
+        status: mockSubmission.status,
+        score: mockSubmission.score,
+        feedback: mockSubmission.feedback,
+        highlights: mockSubmission.highlights,
       });
     });
 
-    it('should throw NotFoundException when essay not found', async () => {
-      // Mock cache service - no cached essay
+    it('should throw NotFoundException when submission not found', async () => {
+      // Mock cache service - no cached submission
       mockCacheService.get.mockResolvedValue(null);
-      mockCacheService.getEssayKey.mockReturnValue(`essay:${essayId}`);
-
-      mockEssayRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.getEssay(essayId, studentId)).rejects.toThrow(
-        NotFoundException,
+      mockCacheService.getSubmissionKey.mockReturnValue(
+        `submission:${submissionId}`,
       );
+
+      mockSubmissionRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.getSubmission(submissionId, studentId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('getStudentEssays', () => {
+  describe('getStudentSubmissions', () => {
     const studentId = 1;
 
-    it('should get student essays successfully', async () => {
-      const mockEssays = [
+    it('should get student submissions successfully', async () => {
+      const mockSubmissions = [
         {
           id: 1,
           title: '첫 번째 에세이',
@@ -396,15 +422,15 @@ describe('EssaysService', () => {
       // Mock cache service - no cached essays
       mockCacheService.get.mockResolvedValue(null);
       mockCacheService.set.mockResolvedValue(undefined);
-      mockCacheService.getStudentEssaysKey.mockReturnValue(
-        `student-essays:${studentId}`,
+      mockCacheService.getStudentSubmissionsKey.mockReturnValue(
+        `student-submissions:${studentId}`,
       );
 
-      mockEssayRepository.find.mockResolvedValue(mockEssays);
+      mockSubmissionRepository.find.mockResolvedValue(mockSubmissions);
 
-      const result = await service.getStudentEssays(studentId);
+      const result = await service.getStudentSubmissions(studentId);
 
-      expect(mockEssayRepository.find).toHaveBeenCalledWith({
+      expect(mockSubmissionRepository.find).toHaveBeenCalledWith({
         where: { studentId },
         order: { createdAt: 'DESC' },
       });
@@ -414,15 +440,15 @@ describe('EssaysService', () => {
     });
 
     it('should return empty array when no essays found', async () => {
-      // Mock cache service - no cached essays
+      // Mock cache service - no cached submissions
       mockCacheService.get.mockResolvedValue(null);
-      mockCacheService.getStudentEssaysKey.mockReturnValue(
-        `student-essays:${studentId}`,
+      mockCacheService.getStudentSubmissionsKey.mockReturnValue(
+        `student-submissions:${studentId}`,
       );
 
-      mockEssayRepository.find.mockResolvedValue([]);
+      mockSubmissionRepository.find.mockResolvedValue([]);
 
-      const result = await service.getStudentEssays(studentId);
+      const result = await service.getStudentSubmissions(studentId);
 
       expect(result).toEqual([]);
     });

@@ -95,7 +95,7 @@ export class ResponseUtil {
     const messageArray = Array.isArray(message) ? message.flat() : [message];
     return {
       result: 'failed',
-      message: messageArray,
+      message: messageArray.length === 1 ? messageArray[0] : messageArray,
     };
   }
 

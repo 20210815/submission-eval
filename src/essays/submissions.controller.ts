@@ -23,27 +23,27 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { EssaysService } from './essays.service';
-import { SubmitEssayDto } from './dto/submit-essay.dto';
+import { SubmissionsService } from './submissions.service';
+import { SubmitSubmissionDto } from './dto/submit-submission.dto';
 import {
-  EssayResponseDto,
-  SubmitEssayResponseDto,
-} from './dto/essay-response.dto';
+  SubmissionResponseDto,
+  SubmitSubmissionResponseDto,
+} from './dto/submission-response.dto';
 import { ResponseUtil } from '../common/utils/response.util';
 import { FutureApiResponse } from '../common/interfaces/api-response.interface';
 import {
   API_RESPONSE_SCHEMAS,
-  ESSAY_VALIDATION_ERROR_EXAMPLES,
+  SUBMISSION_VALIDATION_ERROR_EXAMPLES,
   SERVER_ERROR_EXAMPLES,
 } from '../common/constants/api-response-schemas';
 import { KoreanParseIntPipe } from '../common/pipes/korean-parse-int.pipe';
 
-@ApiTags('Essays')
+@ApiTags('Submissions')
 @ApiBearerAuth()
 @Controller('v1/submissions')
 @UseGuards(JwtAuthGuard)
-export class EssaysController {
-  constructor(private readonly essaysService: EssaysService) {}
+export class SubmissionsController {
+  constructor(private readonly submissionsService: SubmissionsService) {}
 
   @Post()
   @HttpCode(200)
@@ -72,12 +72,12 @@ export class EssaysController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: '에세이 제출 데이터',
-    type: SubmitEssayDto,
+    type: SubmitSubmissionDto,
   })
-  @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_SUBMIT_SUCCESS)
-  @ApiResponse(ESSAY_VALIDATION_ERROR_EXAMPLES)
+  @ApiResponse(API_RESPONSE_SCHEMAS.SUBMISSION_SUBMIT_SUCCESS)
+  @ApiResponse(SUBMISSION_VALIDATION_ERROR_EXAMPLES)
   @ApiResponse(API_RESPONSE_SCHEMAS.AUTHENTICATION_REQUIRED)
-  @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_ALREADY_SUBMITTED)
+  @ApiResponse(API_RESPONSE_SCHEMAS.SUBMISSION_ALREADY_SUBMITTED)
   @ApiResponse(API_RESPONSE_SCHEMAS.CONCURRENT_SUBMISSION)
   @ApiResponse(SERVER_ERROR_EXAMPLES)
   @UseInterceptors(
@@ -96,11 +96,11 @@ export class EssaysController {
       },
     }),
   )
-  async submitEssay(
+  async submitSubmission(
     @Req() req: Request,
-    @Body() dto: SubmitEssayDto,
+    @Body() dto: SubmitSubmissionDto,
     @UploadedFile() videoFile?: Express.Multer.File,
-  ): Promise<FutureApiResponse<SubmitEssayResponseDto | null>> {
+  ): Promise<FutureApiResponse<SubmitSubmissionResponseDto | null>> {
     try {
       const studentId = req.user?.sub;
       if (!studentId) {
@@ -120,7 +120,7 @@ export class EssaysController {
         throw new BadRequestException('에세이 내용은 필수입니다.');
       }
 
-      const result = await this.essaysService.submitEssay(
+      const result = await this.submissionsService.submitSubmission(
         studentId,
         dto,
         videoFile,
@@ -150,22 +150,22 @@ export class EssaysController {
   @Get(':submissionId')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '에세이 조회',
-    description: '특정 에세이의 상세 정보를 조회합니다.',
+    summary: '제출물 조회',
+    description: '특정 제출물의 상세 정보를 조회합니다.',
   })
   @ApiParam({
     name: 'submissionId',
-    description: '에세이 ID',
+    description: '제출물 ID',
     type: Number,
   })
-  @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_GET_SUCCESS)
+  @ApiResponse(API_RESPONSE_SCHEMAS.SUBMISSION_GET_SUCCESS)
   @ApiResponse(API_RESPONSE_SCHEMAS.INVALID_ID_FORMAT)
   @ApiResponse(API_RESPONSE_SCHEMAS.AUTHENTICATION_REQUIRED)
-  @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_NOT_FOUND)
-  async getEssay(
+  @ApiResponse(API_RESPONSE_SCHEMAS.SUBMISSION_NOT_FOUND)
+  async getSubmission(
     @Req() req: Request,
-    @Param('submissionId', KoreanParseIntPipe) essayId: number,
-  ): Promise<FutureApiResponse<EssayResponseDto | null>> {
+    @Param('submissionId', KoreanParseIntPipe) submissionId: number,
+  ): Promise<FutureApiResponse<SubmissionResponseDto | null>> {
     try {
       const studentId = req.user?.sub;
       if (!studentId) {
@@ -176,15 +176,18 @@ export class EssaysController {
         );
       }
 
-      const result = await this.essaysService.getEssay(essayId, studentId);
+      const result = await this.submissionsService.getSubmission(
+        submissionId,
+        studentId,
+      );
 
       return ResponseUtil.createFutureApiResponse(
-        '에세이 조회에 성공했습니다.',
+        '제출물 조회에 성공했습니다.',
         result,
       );
     } catch (error) {
       return ResponseUtil.createFutureApiResponse<null>(
-        error instanceof Error ? error.message : '에세이 조회에 실패했습니다.',
+        error instanceof Error ? error.message : '제출물 조회에 실패했습니다.',
         null,
         'failed',
       );
@@ -194,14 +197,14 @@ export class EssaysController {
   @Get()
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '학생 에세이 목록 조회',
-    description: '현재 로그인한 학생의 모든 에세이 목록을 조회합니다.',
+    summary: '학생 제출물 목록 조회',
+    description: '현재 로그인한 학생의 모든 제출물 목록을 조회합니다.',
   })
-  @ApiResponse(API_RESPONSE_SCHEMAS.ESSAY_LIST_SUCCESS)
+  @ApiResponse(API_RESPONSE_SCHEMAS.SUBMISSION_LIST_SUCCESS)
   @ApiResponse(API_RESPONSE_SCHEMAS.AUTHENTICATION_REQUIRED)
-  async getStudentEssays(
+  async getStudentSubmissions(
     @Req() req: Request,
-  ): Promise<FutureApiResponse<EssayResponseDto[] | null>> {
+  ): Promise<FutureApiResponse<SubmissionResponseDto[] | null>> {
     try {
       const studentId = req.user?.sub;
       if (!studentId) {
@@ -212,17 +215,18 @@ export class EssaysController {
         );
       }
 
-      const result = await this.essaysService.getStudentEssays(studentId);
+      const result =
+        await this.submissionsService.getStudentSubmissions(studentId);
 
       return ResponseUtil.createFutureApiResponse(
-        '에세이 목록 조회에 성공했습니다.',
+        '제출물 목록 조회에 성공했습니다.',
         result,
       );
     } catch (error) {
       return ResponseUtil.createFutureApiResponse<null>(
         error instanceof Error
           ? error.message
-          : '에세이 목록 조회에 실패했습니다.',
+          : '제출물 목록 조회에 실패했습니다.',
         null,
         'failed',
       );

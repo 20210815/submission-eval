@@ -161,7 +161,7 @@ export class SubmitSubmissionResponseDto {
   submitText?: string;
 
   @ApiProperty({
-    description: '하이라이트가 적용된 에세이 텍스트 (평가 완료 시에만 제공)',
+    description: '하이라이트가 적용된 제출물 텍스트 (평가 완료 시에만 제공)',
     example: 'Hello my name is ... <b>I like school.</b> I love <b>pizza</b>.',
     required: false,
   })

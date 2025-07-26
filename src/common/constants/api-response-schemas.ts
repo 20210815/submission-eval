@@ -35,8 +35,8 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  // Essay API responses
-  ESSAY_SUBMIT_SUCCESS: {
+  // Submission API responses
+  SUBMISSION_SUBMIT_SUCCESS: {
     status: 200,
     description: '에세이 제출 성공',
     schema: {
@@ -44,7 +44,7 @@ export const API_RESPONSE_SCHEMAS = {
         result: 'ok',
         message: '에세이가 성공적으로 제출되었습니다.',
         data: {
-          essayId: 1,
+          submissionId: 1,
           studentId: 123,
           studentName: '홍길동',
           status: 'COMPLETED',
@@ -63,17 +63,18 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  ESSAY_GET_SUCCESS: {
+  SUBMISSION_GET_SUCCESS: {
     status: 200,
-    description: '에세이 조회 성공',
+    description: '제출물 조회 성공',
     schema: {
       example: {
         result: 'ok',
-        message: '에세이 조회에 성공했습니다.',
+        message: '제출물 조회에 성공했습니다.',
         data: {
           id: 1,
-          title: 'My English Essay',
-          submitText: 'This is my essay about English language learning...',
+          title: 'My English Submission',
+          submitText:
+            'This is my submission about English language learning...',
           componentType: 'WRITING',
           status: 'COMPLETED',
           score: 85,
@@ -81,9 +82,9 @@ export const API_RESPONSE_SCHEMAS = {
             '문법과 어휘 사용이 우수합니다. 다만 문장 구조를 더 다양하게 사용하면 좋겠습니다.',
           highlights: ['excellent vocabulary', 'good grammar'],
           highlightSubmitText:
-            'This is my essay with <b>excellent vocabulary</b>...',
-          videoUrl: 'https://storage.example.com/videos/essay1_video.mp4',
-          audioUrl: 'https://storage.example.com/audios/essay1_audio.mp3',
+            'This is my submission with <b>excellent vocabulary</b>...',
+          videoUrl: 'https://storage.example.com/videos/submission1_video.mp4',
+          audioUrl: 'https://storage.example.com/audios/submission1_audio.mp3',
           createdAt: '2023-12-01T10:00:00Z',
           updatedAt: '2023-12-01T10:30:00Z',
         },
@@ -91,18 +92,19 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  ESSAY_LIST_SUCCESS: {
+  SUBMISSION_LIST_SUCCESS: {
     status: 200,
-    description: '에세이 목록 조회 성공',
+    description: '제출물 목록 조회 성공',
     schema: {
       example: {
         result: 'ok',
-        message: '에세이 목록 조회에 성공했습니다.',
+        message: '제출물 목록 조회에 성공했습니다.',
         data: [
           {
             id: 1,
-            title: 'My English Essay',
-            submitText: 'This is my essay about English language learning...',
+            title: 'My English Submission',
+            submitText:
+              'This is my submission about English language learning...',
             componentType: 'WRITING',
             status: 'COMPLETED',
             score: 85,
@@ -217,6 +219,88 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
+  REVISION_SUBMISSION_ID_REQUIRED: {
+    status: 400,
+    description: '필수 필드 누락',
+    schema: {
+      example: {
+        result: 'failed',
+        message: 'Submission ID는 필수 입력 항목입니다.',
+      },
+    },
+  },
+
+  REVISION_INVALID_SUBMISSION_ID: {
+    status: 400,
+    description: '유효하지 않은 submission ID 형식',
+    schema: {
+      example: {
+        result: 'failed',
+        message: 'Submission ID는 문자열이어야 합니다.',
+      },
+    },
+  },
+
+  // 오늘보다 미래 날짜의 통계 수집 시도
+  FUTURE_DATE_STATS_COLLECTION: {
+    status: 400,
+    description: '미래 날짜의 통계 수집 시도',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '미래 날짜의 통계는 수집할 수 없습니다.',
+      },
+    },
+  },
+
+  // 미래 시작 날짜의 주간 통계 수집 시도
+  FUTURE_WEEK_START_STATS_COLLECTION: {
+    status: 400,
+    description: '미래 시작 날짜의 주간 통계 수집 시도',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '미래 시작 날짜의 통계는 수집할 수 없습니다.',
+      },
+    },
+  },
+
+  // 미래 종료 날짜의 주간 통계 수집 시도
+  FUTURE_WEEK_END_STATS_COLLECTION: {
+    status: 400,
+    description: '미래 종료 날짜의 주간 통계 수집 시도',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '미래 기간의 통계는 수집할 수 없습니다.',
+      },
+    },
+  },
+
+  // 시작 날짜가 종료 날짜보다 늦은 경우
+  INVALID_WEEK_DATE_ORDER: {
+    status: 400,
+    description: '시작 날짜가 종료 날짜보다 늦음',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '시작 날짜가 종료 날짜보다 늦을 수 없습니다.',
+      },
+    },
+  },
+
+  // 미래 월의 통계 수집 시도
+  FUTURE_MONTH_STATS_COLLECTION: {
+    status: 400,
+    description: '미래 월의 통계 수집 시도',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '미래 월의 통계는 수집할 수 없습니다.',
+      },
+    },
+  },
+
   AUTHENTICATION_REQUIRED: {
     status: 401,
     description: '인증 실패',
@@ -241,18 +325,51 @@ export const API_RESPONSE_SCHEMAS = {
   },
 
   // 404 Not Found
-  ESSAY_NOT_FOUND: {
+  SUBMISSION_NOT_FOUND: {
     status: 404,
-    description: '에세이를 찾을 수 없음',
+    description: '제출물을 찾을 수 없음',
     schema: {
       example: {
         result: 'failed',
-        message: '해당 에세이를 찾을 수 없습니다.',
+        message: '해당 제출물을 찾을 수 없습니다.',
+      },
+    },
+  },
+
+  // Revision API responses
+  REVISION_SUBMISSION_NOT_FOUND: {
+    status: 404,
+    description: '존재하지 않는 제출물',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '존재하지 않는 제출물입니다.',
+      },
+    },
+  },
+
+  REVISION_NOT_FOUND: {
+    status: 404,
+    description: '존재하지 않는 재평가 ID',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '존재하지 않는 재평가 ID입니다.',
       },
     },
   },
 
   // 409 Conflict
+  REVISION_ALREADY_IN_PROGRESS: {
+    status: 409,
+    description: '이미 진행 중인 재평가가 있음',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '이미 진행 중인 재평가가 있습니다.',
+      },
+    },
+  },
 
   CONFLICT: {
     status: 409,
@@ -265,7 +382,7 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  ESSAY_ALREADY_SUBMITTED: {
+  SUBMISSION_ALREADY_SUBMITTED: {
     status: 409,
     description: '이미 해당 유형의 에세이를 제출함',
     schema: {
@@ -347,8 +464,8 @@ export const API_RESPONSE_SCHEMAS = {
   },
 };
 
-// Essay validation error examples
-export const ESSAY_VALIDATION_ERROR_EXAMPLES = {
+// Submission validation error examples
+export const SUBMISSION_VALIDATION_ERROR_EXAMPLES = {
   status: 400,
   description: 'Validation error responses',
   content: {
@@ -399,6 +516,36 @@ export const SERVER_ERROR_EXAMPLES = {
         aiAuthError: {
           summary: API_RESPONSE_SCHEMAS.AI_AUTH_ERROR.description,
           value: API_RESPONSE_SCHEMAS.AI_AUTH_ERROR.schema.example,
+        },
+      },
+    },
+  },
+};
+
+// 통계 수집 관련 에러 예시들
+export const STATS_VALIDATION_ERROR_EXAMPLES = {
+  status: 400,
+  description: '통계 수집 검증 오류',
+  content: {
+    'application/json': {
+      examples: {
+        futureWeekStartStats: {
+          summary:
+            API_RESPONSE_SCHEMAS.FUTURE_WEEK_START_STATS_COLLECTION.description,
+          value:
+            API_RESPONSE_SCHEMAS.FUTURE_WEEK_START_STATS_COLLECTION.schema
+              .example,
+        },
+        futureWeekEndStats: {
+          summary:
+            API_RESPONSE_SCHEMAS.FUTURE_WEEK_END_STATS_COLLECTION.description,
+          value:
+            API_RESPONSE_SCHEMAS.FUTURE_WEEK_END_STATS_COLLECTION.schema
+              .example,
+        },
+        invalidWeekDateOrder: {
+          summary: API_RESPONSE_SCHEMAS.INVALID_WEEK_DATE_ORDER.description,
+          value: API_RESPONSE_SCHEMAS.INVALID_WEEK_DATE_ORDER.schema.example,
         },
       },
     },

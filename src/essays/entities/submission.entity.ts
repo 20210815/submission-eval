@@ -3,16 +3,13 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
 import { BaseEntity } from '../../common/entities/base.entity';
-
-export enum ComponentType {
-  SPEAKING = 'speaking',
-  WRITING = 'writing',
-  READING = 'reading',
-}
+import { Revision } from './revision.entity';
+import { ComponentType } from '../enums/component-type.enum';
 
 export enum EvaluationStatus {
   PENDING = 'pending',
@@ -21,8 +18,8 @@ export enum EvaluationStatus {
   FAILED = 'failed',
 }
 
-@Entity('essays')
-export class Essay extends BaseEntity {
+@Entity('submissions')
+export class Submission extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -76,4 +73,7 @@ export class Essay extends BaseEntity {
 
   @Column({ name: 'student_id' })
   studentId: number;
+
+  @OneToMany(() => Revision, (revision: Revision) => revision.submission)
+  revisions: Revision[];
 }
