@@ -241,6 +241,66 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
+  // 오늘보다 미래 날짜의 통계 수집 시도
+  FUTURE_DATE_STATS_COLLECTION: {
+    status: 400,
+    description: '미래 날짜의 통계 수집 시도',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '미래 날짜의 통계는 수집할 수 없습니다.',
+      },
+    },
+  },
+
+  // 미래 시작 날짜의 주간 통계 수집 시도
+  FUTURE_WEEK_START_STATS_COLLECTION: {
+    status: 400,
+    description: '미래 시작 날짜의 주간 통계 수집 시도',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '미래 시작 날짜의 통계는 수집할 수 없습니다.',
+      },
+    },
+  },
+
+  // 미래 종료 날짜의 주간 통계 수집 시도
+  FUTURE_WEEK_END_STATS_COLLECTION: {
+    status: 400,
+    description: '미래 종료 날짜의 주간 통계 수집 시도',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '미래 기간의 통계는 수집할 수 없습니다.',
+      },
+    },
+  },
+
+  // 시작 날짜가 종료 날짜보다 늦은 경우
+  INVALID_WEEK_DATE_ORDER: {
+    status: 400,
+    description: '시작 날짜가 종료 날짜보다 늦음',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '시작 날짜가 종료 날짜보다 늦을 수 없습니다.',
+      },
+    },
+  },
+
+  // 미래 월의 통계 수집 시도
+  FUTURE_MONTH_STATS_COLLECTION: {
+    status: 400,
+    description: '미래 월의 통계 수집 시도',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '미래 월의 통계는 수집할 수 없습니다.',
+      },
+    },
+  },
+
   AUTHENTICATION_REQUIRED: {
     status: 401,
     description: '인증 실패',
@@ -456,6 +516,36 @@ export const SERVER_ERROR_EXAMPLES = {
         aiAuthError: {
           summary: API_RESPONSE_SCHEMAS.AI_AUTH_ERROR.description,
           value: API_RESPONSE_SCHEMAS.AI_AUTH_ERROR.schema.example,
+        },
+      },
+    },
+  },
+};
+
+// 통계 수집 관련 에러 예시들
+export const STATS_VALIDATION_ERROR_EXAMPLES = {
+  status: 400,
+  description: '통계 수집 검증 오류',
+  content: {
+    'application/json': {
+      examples: {
+        futureWeekStartStats: {
+          summary:
+            API_RESPONSE_SCHEMAS.FUTURE_WEEK_START_STATS_COLLECTION.description,
+          value:
+            API_RESPONSE_SCHEMAS.FUTURE_WEEK_START_STATS_COLLECTION.schema
+              .example,
+        },
+        futureWeekEndStats: {
+          summary:
+            API_RESPONSE_SCHEMAS.FUTURE_WEEK_END_STATS_COLLECTION.description,
+          value:
+            API_RESPONSE_SCHEMAS.FUTURE_WEEK_END_STATS_COLLECTION.schema
+              .example,
+        },
+        invalidWeekDateOrder: {
+          summary: API_RESPONSE_SCHEMAS.INVALID_WEEK_DATE_ORDER.description,
+          value: API_RESPONSE_SCHEMAS.INVALID_WEEK_DATE_ORDER.schema.example,
         },
       },
     },

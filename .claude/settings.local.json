@@ -31,7 +31,8 @@
       "Bash(npm uninstall:*)",
       "Bash(npx eslint:*)",
       "Bash(rm:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(npm run test:*)"
     ],
     "deny": []
   }

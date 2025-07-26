@@ -8,7 +8,7 @@ export class LoginDto {
   email: string;
 
   @ApiProperty({
-    example: 'SecurePass123!',
+    example: 'mypassword123',
     description:
       'Student password (minimum 8 characters with complexity requirements)',
     minLength: 8,

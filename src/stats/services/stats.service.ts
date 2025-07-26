@@ -90,7 +90,7 @@ export class StatsService {
     // 미래 날짜 검증
     const today = new Date().toISOString().split('T')[0];
     if (date > today) {
-      throw new Error(`미래 날짜(${date})의 통계는 수집할 수 없습니다. 오늘 날짜: ${today}`);
+      throw new Error(`미래 날짜의 통계는 수집할 수 없습니다.`);
     }
 
     // 이미 집계된 데이터가 있는지 확인
@@ -137,8 +137,14 @@ export class StatsService {
   ): Promise<StatsWeekly> {
     // 미래 날짜 검증
     const today = new Date().toISOString().split('T')[0];
+    if (weekStart > today) {
+      throw new Error(`미래 시작 날짜의 통계는 수집할 수 없습니다.`);
+    }
     if (weekEnd > today) {
-      throw new Error(`미래 기간(${weekStart} ~ ${weekEnd})의 통계는 수집할 수 없습니다. 오늘 날짜: ${today}`);
+      throw new Error(`미래 기간의 통계는 수집할 수 없습니다.`);
+    }
+    if (weekStart > weekEnd) {
+      throw new Error(`시작 날짜가 종료 날짜보다 늦을 수 없습니다.`);
     }
 
     // 이미 집계된 데이터가 있는지 확인
@@ -188,7 +194,7 @@ export class StatsService {
     const today = new Date();
     const currentMonth = today.toISOString().slice(0, 7); // YYYY-MM
     if (month > currentMonth) {
-      throw new Error(`미래 월(${month})의 통계는 수집할 수 없습니다. 현재 월: ${currentMonth}`);
+      throw new Error(`미래 월의 통계는 수집할 수 없습니다.`);
     }
 
     // 이미 집계된 데이터가 있는지 확인

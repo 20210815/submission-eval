@@ -1,48 +1,38 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString, Matches } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsDateString, Matches } from 'class-validator';
 
 export class GetDailyStatsDto {
   @ApiProperty({
-    description: '시작 날짜 (YYYY-MM-DD)',
-    example: '2025-01-01',
+    description: '조회할 날짜 (YYYY-MM-DD)',
+    example: '2025-01-15',
   })
   @IsDateString()
-  startDate: string;
-
-  @ApiProperty({
-    description: '종료 날짜 (YYYY-MM-DD)',
-    example: '2025-01-31',
-  })
-  @IsDateString()
-  endDate: string;
+  day: string;
 }
 
 export class GetWeeklyStatsDto {
-  @ApiPropertyOptional({
-    description: '연도',
-    example: 2025,
+  @ApiProperty({
+    description: '주 시작일 (YYYY-MM-DD)',
+    example: '2025-01-13',
   })
-  @IsOptional()
-  @IsString()
-  year?: string;
+  @IsDateString()
+  weekStart: string;
 
-  @ApiPropertyOptional({
-    description: '월 (1-12)',
-    example: 1,
+  @ApiProperty({
+    description: '주 종료일 (YYYY-MM-DD)',
+    example: '2025-01-19',
   })
-  @IsOptional()
-  @IsString()
-  month?: string;
+  @IsDateString()
+  weekEnd: string;
 }
 
 export class GetMonthlyStatsDto {
-  @ApiPropertyOptional({
-    description: '연도',
-    example: 2025,
+  @ApiProperty({
+    description: '월 (YYYY-MM)',
+    example: '2025-01',
   })
-  @IsOptional()
-  @IsString()
-  year?: string;
+  @Matches(/^\d{4}-\d{2}$/, { message: '월은 YYYY-MM 형식이어야 합니다.' })
+  month: string;
 }
 
 export class StatsResponseDto {
@@ -74,39 +64,5 @@ export class WeeklyStatsResponseDto extends StatsResponseDto {
 
 export class MonthlyStatsResponseDto extends StatsResponseDto {
   @ApiProperty({ description: '월 (YYYY-MM)', example: '2025-01' })
-  month: string;
-}
-
-export class ManualCollectDto {
-  @ApiProperty({
-    description: '수집할 날짜 (YYYY-MM-DD)',
-    example: '2025-01-15',
-  })
-  @IsDateString()
-  date: string;
-}
-
-export class ManualCollectWeeklyDto {
-  @ApiProperty({
-    description: '주 시작일 (YYYY-MM-DD)',
-    example: '2025-01-13',
-  })
-  @IsDateString()
-  weekStart: string;
-
-  @ApiProperty({
-    description: '주 종료일 (YYYY-MM-DD)',
-    example: '2025-01-19',
-  })
-  @IsDateString()
-  weekEnd: string;
-}
-
-export class ManualCollectMonthlyDto {
-  @ApiProperty({
-    description: '월 (YYYY-MM)',
-    example: '2025-01',
-  })
-  @Matches(/^\d{4}-\d{2}$/, { message: '월은 YYYY-MM 형식이어야 합니다.' })
   month: string;
 }

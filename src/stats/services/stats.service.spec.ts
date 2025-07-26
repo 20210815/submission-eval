@@ -116,7 +116,7 @@ describe('StatsService', () => {
       const futureDate = '2099-12-31';
 
       await expect(service.collectDailyStats(futureDate)).rejects.toThrow(
-        '미래 날짜(2099-12-31)의 통계는 수집할 수 없습니다',
+        '미래 날짜의 통계는 수집할 수 없습니다',
       );
     });
   });
@@ -142,17 +142,27 @@ describe('StatsService', () => {
       expect(result.date).toBe(testDate);
     });
 
-    it('should throw error for future week', async () => {
+    it('should throw error for future week start date', async () => {
       await expect(
-        service.collectWeeklyStats('2099-12-25', '2099-12-31'),
-      ).rejects.toThrow(
-        '미래 기간(2099-12-25 ~ 2099-12-31)의 통계는 수집할 수 없습니다',
-      );
+        service.collectWeeklyStats('2099-12-25', '2025-01-15'),
+      ).rejects.toThrow('미래 시작 날짜의 통계는 수집할 수 없습니다');
+    });
+
+    it('should throw error for future week end date', async () => {
+      await expect(
+        service.collectWeeklyStats('2025-01-15', '2099-12-31'),
+      ).rejects.toThrow('미래 기간의 통계는 수집할 수 없습니다');
+    });
+
+    it('should throw error when start date is after end date', async () => {
+      await expect(
+        service.collectWeeklyStats('2025-01-20', '2025-01-15'),
+      ).rejects.toThrow('시작 날짜가 종료 날짜보다 늦을 수 없습니다');
     });
 
     it('should throw error for future month', async () => {
       await expect(service.collectMonthlyStats('2099-12')).rejects.toThrow(
-        '미래 월(2099-12)의 통계는 수집할 수 없습니다',
+        '미래 월의 통계는 수집할 수 없습니다',
       );
     });
   });
