@@ -31,6 +31,13 @@
 $ npm install
 ```
 
+## API Docs
+
+You can access the Swagger API documentation at:  
+👉 [http://localhost:3000/api#/](http://localhost:3000/api#/)
+
+> Replace `localhost:3000` with your deployed domain if applicable.
+
 ## Compile and run the project
 
 ```bash
