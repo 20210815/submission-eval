@@ -19,7 +19,9 @@ async function bootstrap() {
       skipMissingProperties: false,
 
       exceptionFactory: (errors) => {
-        const messages = errors.map((e) => Object.values(e.constraints || {})).flat();
+        const messages = errors
+          .map((e) => Object.values(e.constraints || {}))
+          .flat();
         return new BadRequestException(
           messages.length === 1 ? messages[0] : messages,
         );

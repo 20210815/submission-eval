@@ -10,7 +10,10 @@ import {
   Submission,
   EvaluationStatus,
 } from '../src/essays/entities/submission.entity';
-import { Revision, RevisionStatus } from '../src/essays/entities/revision.entity';
+import {
+  Revision,
+  RevisionStatus,
+} from '../src/essays/entities/revision.entity';
 import { Student } from '../src/students/entities/student.entity';
 import { ComponentType } from '../src/essays/enums/component-type.enum';
 import { CreateRevisionDto } from '../src/essays/dto/revision.dto';
@@ -250,7 +253,7 @@ describe('Revision Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({ submissionId: null }) // Null submissionId field
         .expect(400);
-      
+
       expect(response.body).toMatchObject({
         result: 'failed',
         message: 'Submission ID는 필수 입력 항목입니다.',
