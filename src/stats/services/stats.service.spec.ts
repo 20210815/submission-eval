@@ -111,6 +111,14 @@ describe('StatsService', () => {
       });
       expect(saveSpy).toHaveBeenCalledWith(expect.any(Object));
     });
+
+    it('should throw error for future date', async () => {
+      const futureDate = '2099-12-31';
+
+      await expect(service.collectDailyStats(futureDate)).rejects.toThrow(
+        '미래 날짜(2099-12-31)의 통계는 수집할 수 없습니다',
+      );
+    });
   });
 
   describe('manual collection methods', () => {
@@ -132,6 +140,20 @@ describe('StatsService', () => {
 
       expect(mockCollectDailyStats).toHaveBeenCalledWith(testDate);
       expect(result.date).toBe(testDate);
+    });
+
+    it('should throw error for future week', async () => {
+      await expect(
+        service.collectWeeklyStats('2099-12-25', '2099-12-31'),
+      ).rejects.toThrow(
+        '미래 기간(2099-12-25 ~ 2099-12-31)의 통계는 수집할 수 없습니다',
+      );
+    });
+
+    it('should throw error for future month', async () => {
+      await expect(service.collectMonthlyStats('2099-12')).rejects.toThrow(
+        '미래 월(2099-12)의 통계는 수집할 수 없습니다',
+      );
     });
   });
 });

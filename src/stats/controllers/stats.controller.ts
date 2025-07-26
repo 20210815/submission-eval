@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -164,18 +164,25 @@ export class StatsController {
   async manualCollectDaily(
     @Body() body: ManualCollectDto,
   ): Promise<DailyStatsResponseDto> {
-    const stat = await this.statsService.manualCollectDailyStats(body.date);
+    try {
+      const stat = await this.statsService.manualCollectDailyStats(body.date);
 
-    return {
-      date: stat.date,
-      totalCount: stat.totalCount,
-      successCount: stat.successCount,
-      failCount: stat.failCount,
-      successRate:
-        stat.totalCount > 0
-          ? Number(((stat.successCount / stat.totalCount) * 100).toFixed(1))
-          : 0,
-    };
+      return {
+        date: stat.date,
+        totalCount: stat.totalCount,
+        successCount: stat.successCount,
+        failCount: stat.failCount,
+        successRate:
+          stat.totalCount > 0
+            ? Number(((stat.successCount / stat.totalCount) * 100).toFixed(1))
+            : 0,
+      };
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('미래 날짜')) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
   }
 
   @Post('collect/weekly')

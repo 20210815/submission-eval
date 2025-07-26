@@ -87,6 +87,12 @@ export class StatsService {
   }
 
   async collectDailyStats(date: string): Promise<StatsDaily> {
+    // 미래 날짜 검증
+    const today = new Date().toISOString().split('T')[0];
+    if (date > today) {
+      throw new Error(`미래 날짜(${date})의 통계는 수집할 수 없습니다. 오늘 날짜: ${today}`);
+    }
+
     // 이미 집계된 데이터가 있는지 확인
     const existing = await this.statsDailyRepository.findOne({
       where: { date },
@@ -129,6 +135,12 @@ export class StatsService {
     weekStart: string,
     weekEnd: string,
   ): Promise<StatsWeekly> {
+    // 미래 날짜 검증
+    const today = new Date().toISOString().split('T')[0];
+    if (weekEnd > today) {
+      throw new Error(`미래 기간(${weekStart} ~ ${weekEnd})의 통계는 수집할 수 없습니다. 오늘 날짜: ${today}`);
+    }
+
     // 이미 집계된 데이터가 있는지 확인
     const existing = await this.statsWeeklyRepository.findOne({
       where: { weekStart },
@@ -172,6 +184,13 @@ export class StatsService {
   }
 
   async collectMonthlyStats(month: string): Promise<StatsMonthly> {
+    // 미래 월 검증
+    const today = new Date();
+    const currentMonth = today.toISOString().slice(0, 7); // YYYY-MM
+    if (month > currentMonth) {
+      throw new Error(`미래 월(${month})의 통계는 수집할 수 없습니다. 현재 월: ${currentMonth}`);
+    }
+
     // 이미 집계된 데이터가 있는지 확인
     const existing = await this.statsMonthlyRepository.findOne({
       where: { month },
