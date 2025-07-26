@@ -4,7 +4,7 @@ import { IsDateString, Matches } from 'class-validator';
 export class GetDailyStatsDto {
   @ApiProperty({
     description: '조회할 날짜 (YYYY-MM-DD)',
-    example: '2025-01-15',
+    example: '2025-07-26',
   })
   @IsDateString()
   day: string;
@@ -13,14 +13,14 @@ export class GetDailyStatsDto {
 export class GetWeeklyStatsDto {
   @ApiProperty({
     description: '주 시작일 (YYYY-MM-DD)',
-    example: '2025-01-13',
+    example: '2025-07-26',
   })
   @IsDateString()
   weekStart: string;
 
   @ApiProperty({
     description: '주 종료일 (YYYY-MM-DD)',
-    example: '2025-01-19',
+    example: '2025-07-31',
   })
   @IsDateString()
   weekEnd: string;
@@ -29,7 +29,7 @@ export class GetWeeklyStatsDto {
 export class GetMonthlyStatsDto {
   @ApiProperty({
     description: '월 (YYYY-MM)',
-    example: '2025-01',
+    example: '2025-07',
   })
   @Matches(/^\d{4}-\d{2}$/, { message: '월은 YYYY-MM 형식이어야 합니다.' })
   month: string;
@@ -50,19 +50,19 @@ export class StatsResponseDto {
 }
 
 export class DailyStatsResponseDto extends StatsResponseDto {
-  @ApiProperty({ description: '날짜', example: '2025-01-15' })
+  @ApiProperty({ description: '날짜', example: '2025-07-26' })
   date: string;
 }
 
 export class WeeklyStatsResponseDto extends StatsResponseDto {
-  @ApiProperty({ description: '주 시작일', example: '2025-01-13' })
+  @ApiProperty({ description: '주 시작일', example: '2025-07-26' })
   weekStart: string;
 
-  @ApiProperty({ description: '주 종료일', example: '2025-01-19' })
+  @ApiProperty({ description: '주 종료일', example: '2025-08-01' })
   weekEnd: string;
 }
 
 export class MonthlyStatsResponseDto extends StatsResponseDto {
-  @ApiProperty({ description: '월 (YYYY-MM)', example: '2025-01' })
+  @ApiProperty({ description: '월 (YYYY-MM)', example: '2025-07' })
   month: string;
 }

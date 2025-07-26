@@ -30,7 +30,7 @@ function IsStringOnlyIfPresent(validationOptions?: ValidationOptions) {
 
 export class CreateRevisionDto {
   @ApiProperty({
-    description: 'Submission ID',
+    description: '제출물 ID',
     example: '1',
   })
   @IsNotEmpty({ message: 'Submission ID는 필수 입력 항목입니다.' })
@@ -88,12 +88,6 @@ export class RevisionResponseDto {
     example: 'Hello my name is ... <b>I like school.</b> I love <b>pizza</b>.',
   })
   highlightSubmitText?: string;
-
-  @ApiPropertyOptional({
-    description: '오류 메시지 (실패 시)',
-    example: 'AI 평가 중 네트워크 오류가 발생했습니다.',
-  })
-  errorMessage?: string;
 
   @ApiPropertyOptional({
     description: 'API 응답 시간 (ms)',

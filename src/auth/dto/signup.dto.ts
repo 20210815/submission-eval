@@ -60,7 +60,7 @@ function IsPasswordRequired(validationOptions?: ValidationOptions) {
 export class SignupDto {
   @ApiProperty({
     example: 'John Doe',
-    description: 'Student name',
+    description: '학생 이름',
     maxLength: 100,
   })
   @IsString()
@@ -70,7 +70,7 @@ export class SignupDto {
 
   @ApiProperty({
     example: 'john@example.com',
-    description: 'Student email',
+    description: '학생 이메일',
     maxLength: 255,
   })
   @IsString()

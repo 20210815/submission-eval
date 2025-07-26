@@ -165,7 +165,7 @@ export class SubmissionsService {
     );
 
     if (!submission) {
-      throw new NotFoundException('제출물을 찾을 수 없습니다.');
+      throw new NotFoundException('해당 제출물을 찾을 수 없습니다.');
     }
 
     return {

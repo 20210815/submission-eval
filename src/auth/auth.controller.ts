@@ -42,7 +42,7 @@ export class AuthController {
       - JWT 토큰 만료 검증
       - 보안을 위한 HttpOnly 쿠키 설정
       - SameSite=Strict 보호
-      - Automatic token refresh handling
+      - 자동 토큰 갱신 처리
     `,
   })
   @ApiBody({ type: LoginDto })
