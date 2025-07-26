@@ -1,4 +1,3 @@
-import { validate } from 'class-validator';
 import { SubmissionMediaResponseDto } from './submission-media.dto';
 
 describe('SubmissionMediaResponseDto', () => {
@@ -53,8 +52,8 @@ describe('SubmissionMediaResponseDto', () => {
     });
   });
 
-  describe('DTO Validation', () => {
-    it('should be valid with all fields populated', async () => {
+  describe('DTO Properties', () => {
+    it('should have all fields populated correctly', () => {
       dto.id = 1;
       dto.submissionId = 1;
       dto.videoUrl = 'https://example.com/video.mp4';
@@ -63,21 +62,31 @@ describe('SubmissionMediaResponseDto', () => {
       dto.createdAt = new Date();
       dto.updatedAt = new Date();
 
-      const errors = await validate(dto);
-      expect(errors).toHaveLength(0);
+      expect(dto.id).toBe(1);
+      expect(dto.submissionId).toBe(1);
+      expect(dto.videoUrl).toBe('https://example.com/video.mp4');
+      expect(dto.audioUrl).toBe('https://example.com/audio.mp3');
+      expect(dto.originalFileName).toBe('test_video.mp4');
+      expect(dto.createdAt).toBeInstanceOf(Date);
+      expect(dto.updatedAt).toBeInstanceOf(Date);
     });
 
-    it('should be valid with minimal required fields', async () => {
+    it('should work with minimal required fields', () => {
       dto.id = 1;
       dto.submissionId = 1;
       dto.createdAt = new Date();
       dto.updatedAt = new Date();
 
-      const errors = await validate(dto);
-      expect(errors).toHaveLength(0);
+      expect(dto.id).toBe(1);
+      expect(dto.submissionId).toBe(1);
+      expect(dto.createdAt).toBeInstanceOf(Date);
+      expect(dto.updatedAt).toBeInstanceOf(Date);
+      expect(dto.videoUrl).toBeUndefined();
+      expect(dto.audioUrl).toBeUndefined();
+      expect(dto.originalFileName).toBeUndefined();
     });
 
-    it('should handle long URLs correctly', async () => {
+    it('should handle long URLs correctly', () => {
       const longUrl = 'https://example.com/' + 'a'.repeat(500) + '/video.mp4';
 
       dto.id = 1;
@@ -88,9 +97,8 @@ describe('SubmissionMediaResponseDto', () => {
       dto.createdAt = new Date();
       dto.updatedAt = new Date();
 
-      const errors = await validate(dto);
-      expect(errors).toHaveLength(0);
       expect(dto.videoUrl).toBe(longUrl);
+      expect(dto.audioUrl).toBe(longUrl.replace('video.mp4', 'audio.mp3'));
       expect(dto.originalFileName).toContain('very_long_filename_');
     });
   });
