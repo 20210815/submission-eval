@@ -5,15 +5,15 @@ import * as request from 'supertest';
 import { DataSource } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { Server } from 'http';
-import { AppModule } from '../app.module';
+import { AppModule } from '../src/app.module';
 import {
   Submission,
   EvaluationStatus,
-} from '../essays/entities/submission.entity';
-import { Revision, RevisionStatus } from '../essays/entities/revision.entity';
-import { Student } from '../students/entities/student.entity';
-import { ComponentType } from '../essays/enums/component-type.enum';
-import { CreateRevisionDto } from '../essays/dto/revision.dto';
+} from '../src/essays/entities/submission.entity';
+import { Revision, RevisionStatus } from '../src/essays/entities/revision.entity';
+import { Student } from '../src/students/entities/student.entity';
+import { ComponentType } from '../src/essays/enums/component-type.enum';
+import { CreateRevisionDto } from '../src/essays/dto/revision.dto';
 
 export interface CreateRevisionResponse {
   id: number;
@@ -195,7 +195,7 @@ describe('Revision Integration Tests', () => {
       const responseBody = response.body as ExceptionResponse;
 
       expect(responseBody.message).toContain(
-        '유효하지 않은 submission ID입니다',
+        'Submission ID는 필수 입력 항목입니다.',
       );
     });
 
@@ -245,11 +245,16 @@ describe('Revision Integration Tests', () => {
     });
 
     it('should return 400 for missing required fields', async () => {
-      await request(app.getHttpServer() as Server)
+      const response = await request(app.getHttpServer() as Server)
         .post('/v1/revision')
         .set('Authorization', `Bearer ${authToken}`)
-        .send({}) // Empty body
+        .send({ submissionId: null }) // Null submissionId field
         .expect(400);
+      
+      expect(response.body).toMatchObject({
+        result: 'failed',
+        message: 'Submission ID는 필수 입력 항목입니다.',
+      });
     });
   });
 

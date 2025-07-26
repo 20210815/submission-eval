@@ -16,9 +16,10 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       validateCustomDecorators: true,
+      skipMissingProperties: false,
 
       exceptionFactory: (errors) => {
-        const messages = errors.map((e) => Object.values(e.constraints || {}));
+        const messages = errors.map((e) => Object.values(e.constraints || {})).flat();
         return new BadRequestException(
           messages.length === 1 ? messages[0] : messages,
         );

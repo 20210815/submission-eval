@@ -1,15 +1,40 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsNotEmpty,
+  registerDecorator,
+  ValidationOptions,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ComponentType } from '../enums/component-type.enum';
 import { RevisionStatus } from '../entities/revision.entity';
+
+function IsStringOnlyIfPresent(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'isStringOnlyIfPresent',
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: any) {
+          return (
+            value === undefined ||
+            value === null ||
+            value === '' ||
+            typeof value === 'string'
+          );
+        },
+      },
+    });
+  };
+}
 
 export class CreateRevisionDto {
   @ApiProperty({
     description: 'Submission ID',
     example: '1',
   })
-  @IsString({ message: 'Submission ID는 문자열이어야 합니다.' })
   @IsNotEmpty({ message: 'Submission ID는 필수 입력 항목입니다.' })
+  @IsStringOnlyIfPresent({ message: 'Submission ID는 문자열이어야 합니다.' })
   submissionId: string;
 }
 

@@ -42,20 +42,12 @@ export class RevisionService {
   ): Promise<RevisionResponseDto> {
     const { submissionId } = createRevisionDto;
 
-    // 필수 필드 검증
-    if (!submissionId) {
-      throw new BadRequestException({
-        result: 'failed',
-        message: 'submissionId는 필수입니다.',
-      });
-    }
-
     // submissionId를 숫자로 변환 (기존 제출 ID와 매핑)
     const parsedSubmissionId = parseInt(submissionId, 10);
     if (isNaN(parsedSubmissionId)) {
       throw new BadRequestException({
         result: 'failed',
-        message: '유효하지 않은 submission ID입니다.',
+        message: 'Submission ID는 필수 입력 항목입니다.',
       });
     }
 

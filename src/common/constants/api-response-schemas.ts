@@ -219,6 +219,28 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
+  REVISION_SUBMISSION_ID_REQUIRED: {
+    status: 400,
+    description: '필수 필드 누락',
+    schema: {
+      example: {
+        result: 'failed',
+        message: 'Submission ID는 필수 입력 항목입니다.',
+      },
+    },
+  },
+
+  REVISION_INVALID_SUBMISSION_ID: {
+    status: 400,
+    description: '유효하지 않은 submission ID 형식',
+    schema: {
+      example: {
+        result: 'failed',
+        message: 'Submission ID는 문자열이어야 합니다.',
+      },
+    },
+  },
+
   AUTHENTICATION_REQUIRED: {
     status: 401,
     description: '인증 실패',
@@ -277,28 +299,7 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  REVISION_SUBMISSION_ID_REQUIRED: {
-    status: 400,
-    description: '필수 필드 누락',
-    schema: {
-      example: {
-        result: 'failed',
-        message: 'submissionId는 필수입니다.',
-      },
-    },
-  },
-
-  REVISION_INVALID_SUBMISSION_ID: {
-    status: 400,
-    description: '유효하지 않은 submission ID 형식',
-    schema: {
-      example: {
-        result: 'failed',
-        message: '유효하지 않은 submission ID입니다.',
-      },
-    },
-  },
-
+  // 409 Conflict
   REVISION_ALREADY_IN_PROGRESS: {
     status: 409,
     description: '이미 진행 중인 재평가가 있음',
@@ -309,8 +310,6 @@ export const API_RESPONSE_SCHEMAS = {
       },
     },
   },
-
-  // 409 Conflict
 
   CONFLICT: {
     status: 409,
