@@ -12,12 +12,20 @@ import { OpenAIService } from './services/openai.service';
 import { TextHighlightingService } from './services/text-highlighting.service';
 import { NotificationService } from './services/notification.service';
 import { RevisionService } from './services/revision.service';
+import { SubmissionMediaService } from './services/submission-media.service';
 import { RevisionController } from './controllers/revision.controller';
 import { CacheCustomModule } from '../cache/cache.module';
+import { SubmissionMedia } from './entities/submission-media.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Submission, EvaluationLog, Revision, Student]),
+    TypeOrmModule.forFeature([
+      Submission,
+      EvaluationLog,
+      Revision,
+      Student,
+      SubmissionMedia,
+    ]),
     CacheCustomModule,
   ],
   controllers: [SubmissionsController, RevisionController],
@@ -29,6 +37,7 @@ import { CacheCustomModule } from '../cache/cache.module';
     TextHighlightingService,
     NotificationService,
     RevisionService,
+    SubmissionMediaService,
   ],
   exports: [SubmissionsService],
 })
