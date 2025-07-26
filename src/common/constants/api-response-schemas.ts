@@ -2,7 +2,7 @@ export const API_RESPONSE_SCHEMAS = {
   // 201 Created responses
   SIGNUP_SUCCESS: {
     status: 201,
-    description: 'Student successfully created',
+    description: '학생 가입 성공',
     schema: {
       example: {
         result: 'ok',
@@ -16,10 +16,10 @@ export const API_RESPONSE_SCHEMAS = {
 
   LOGIN_SUCCESS: {
     status: 200,
-    description: 'Login successful, JWT token returned in Authorization header',
+    description: '로그인 성공, Authorization 헤더에 JWT 토큰 반환',
     headers: {
       Authorization: {
-        description: 'JWT Bearer token',
+        description: 'JWT Bearer 토큰',
         schema: {
           type: 'string',
           example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
@@ -101,15 +101,28 @@ export const API_RESPONSE_SCHEMAS = {
         message: '제출물 목록 조회에 성공했습니다.',
         data: [
           {
-            id: 1,
-            title: 'My English Submission',
-            submitText:
-              'This is my submission about English language learning...',
-            componentType: 'WRITING',
-            status: 'COMPLETED',
-            score: 85,
-            createdAt: '2023-12-01T10:00:00Z',
-            updatedAt: '2023-12-01T10:30:00Z',
+            result: 'ok',
+            message: '제출물 목록 조회에 성공했습니다.',
+            data: [
+              {
+                id: 1,
+                title: 'My English Submission',
+                submitText:
+                  'This is my submission about English language learning and its importance in modern society... dasfasdfasdfasdddddddddd',
+                componentType: 'writing',
+                status: 'completed',
+                score: 2,
+                feedback:
+                  "이 제출물은 영어 학습의 중요성을 다루고자 했으나, 본문이 불완전하게 작성되어 있습니다. 문법과 문장 구조가 제대로 갖춰지지 않았으며, 'dasfasdfasdfasdddddddddd'와 같은 무의미한 문자열이 포함되어 있어 내용의 일관성과 관련성을 해칩니다. 어휘 사용의 다양성도 부족하여 주제를 효과적으로 전달하지 못하고 있습니다. 전반적으로 명확한 의사소통이 이루어지지 않아 제출물의 품질이 낮습니다.",
+                highlights: [
+                  'This is my submission about English language learning and its importance in modern society',
+                ],
+                highlightSubmitText:
+                  '<b>This is my submission about English language learning and its importance in modern society</b>... dasfasdfasdfasdddddddddd',
+                createdAt: '2025-07-26T14:10:26.827Z',
+                updatedAt: '2025-07-26T14:10:29.983Z',
+              },
+            ],
           },
         ],
       },
@@ -467,7 +480,7 @@ export const API_RESPONSE_SCHEMAS = {
 // Submission validation error examples
 export const SUBMISSION_VALIDATION_ERROR_EXAMPLES = {
   status: 400,
-  description: 'Validation error responses',
+  description: '유효성 검사 오류 응답',
   content: {
     'application/json': {
       examples: {
@@ -554,7 +567,7 @@ export const STATS_VALIDATION_ERROR_EXAMPLES = {
 
 export const VALIDATION_ERROR_EXAMPLES = {
   status: 400,
-  description: 'Validation error responses',
+  description: '유효성 검사 오류 응답',
   content: {
     'application/json': {
       examples: {

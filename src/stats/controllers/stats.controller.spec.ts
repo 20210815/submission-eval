@@ -101,9 +101,9 @@ describe('StatsController', () => {
         failCount: 20,
         successRate: 80.0,
       });
-      expect(
-        statsDailyRepository.findOne.bind(statsDailyRepository),
-      ).toHaveBeenCalledWith({ where: { date: '2025-01-15' } });
+      expect(statsDailyRepository.findOne).toHaveBeenCalledWith({
+        where: { date: '2025-01-15' },
+      });
     });
 
     it('should return zero stats when no data exists', async () => {
@@ -180,9 +180,7 @@ describe('StatsController', () => {
           successRate: 80.0,
         },
       ]);
-      expect(
-        statsWeeklyRepository.find.bind(statsWeeklyRepository),
-      ).toHaveBeenCalledWith({
+      expect(statsWeeklyRepository.find).toHaveBeenCalledWith({
         where: { weekStart: Between('2025-01-13', '2025-01-19') },
         order: { weekStart: 'ASC' },
       });
@@ -278,9 +276,7 @@ describe('StatsController', () => {
         failCount: 100,
         successRate: 80.0,
       });
-      expect(
-        statsMonthlyRepository.findOne.bind(statsMonthlyRepository),
-      ).toHaveBeenCalledWith({
+      expect(statsMonthlyRepository.findOne).toHaveBeenCalledWith({
         where: { month: '2025-01' },
       });
     });
