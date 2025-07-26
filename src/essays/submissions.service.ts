@@ -25,6 +25,10 @@ import { TextHighlightingService } from './services/text-highlighting.service';
 import { NotificationService } from './services/notification.service';
 import { CacheService } from '../cache/cache.service';
 import { Revision, RevisionStatus } from './entities/revision.entity';
+import {
+  SubmissionQueryDto,
+  SubmissionListResponseDto,
+} from './dto/submission-query.dto';
 
 interface ProcessedVideo {
   videoPath: string;
@@ -224,6 +228,123 @@ export class SubmissionsService {
     await this.cacheService.set(cacheKey, submissionDtos, 10 * 60);
 
     return submissionDtos;
+  }
+
+  async getAllSubmissions(
+    queryDto: SubmissionQueryDto,
+  ): Promise<SubmissionListResponseDto> {
+    const {
+      page = 1,
+      size = 20,
+      sort = 'createdAt,DESC',
+      status,
+      studentId,
+      studentName,
+      title,
+    } = queryDto;
+
+    // 정렬 파라미터 파싱
+    const [sortField, sortOrder] = sort.split(',');
+    const order = sortOrder?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    // QueryBuilder 생성
+    const queryBuilder = this.submissionRepository
+      .createQueryBuilder('submission')
+      .leftJoinAndSelect('submission.student', 'student')
+      .select([
+        'submission.id',
+        'submission.title',
+        'submission.submitText',
+        'submission.componentType',
+        'submission.status',
+        'submission.score',
+        'submission.feedback',
+        'submission.highlights',
+        'submission.highlightSubmitText',
+        'submission.videoUrl',
+        'submission.audioUrl',
+        'submission.createdAt',
+        'submission.updatedAt',
+        'student.id',
+        'student.name',
+      ]);
+
+    // 필터 조건 추가
+    if (status) {
+      queryBuilder.andWhere('submission.status = :status', { status });
+    }
+
+    if (studentId) {
+      queryBuilder.andWhere('submission.studentId = :studentId', {
+        studentId: parseInt(studentId, 10),
+      });
+    }
+
+    if (studentName) {
+      queryBuilder.andWhere('student.name LIKE :studentName', {
+        studentName: `%${studentName}%`,
+      });
+    }
+
+    if (title) {
+      queryBuilder.andWhere('submission.title LIKE :title', {
+        title: `%${title}%`,
+      });
+    }
+
+    // 정렬 추가
+    const validSortFields = ['createdAt', 'updatedAt', 'score', 'title'];
+    if (validSortFields.includes(sortField)) {
+      queryBuilder.orderBy(`submission.${sortField}`, order);
+    } else {
+      queryBuilder.orderBy('submission.createdAt', 'DESC');
+    }
+
+    // 페이지네이션
+    const skip = (page - 1) * Math.min(size, 100); // 최대 100개로 제한
+    const take = Math.min(size, 100);
+
+    queryBuilder.skip(skip).take(take);
+
+    // 실행
+    const [submissions, total] = await queryBuilder.getManyAndCount();
+
+    // DTO 변환
+    const data = submissions.map((submission) => ({
+      id: submission.id,
+      title: submission.title,
+      submitText: submission.submitText,
+      componentType: submission.componentType,
+      status: submission.status,
+      score: submission.score ?? undefined,
+      feedback: submission.feedback ?? undefined,
+      highlights: submission.highlights ?? undefined,
+      highlightSubmitText: submission.highlightSubmitText ?? undefined,
+      videoUrl: submission.videoUrl ?? undefined,
+      audioUrl: submission.audioUrl ?? undefined,
+      createdAt: submission.createdAt,
+      updatedAt: submission.updatedAt,
+      student: {
+        id: submission.student.id,
+        name: submission.student.name,
+      },
+    }));
+
+    // 페이지네이션 정보 계산
+    const totalPages = Math.ceil(total / take);
+    const currentPage = page;
+    const hasNext = currentPage < totalPages;
+    const hasPrevious = currentPage > 1;
+
+    return {
+      data,
+      total,
+      totalPages,
+      currentPage,
+      pageSize: take,
+      hasNext,
+      hasPrevious,
+    };
   }
 
   private async processSubmissionEvaluation(

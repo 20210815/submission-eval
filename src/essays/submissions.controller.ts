@@ -10,6 +10,7 @@ import {
   Req,
   HttpCode,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -21,6 +22,7 @@ import {
   ApiBody,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { SubmissionsService } from './submissions.service';
@@ -34,9 +36,14 @@ import { FutureApiResponse } from '../common/interfaces/api-response.interface';
 import {
   API_RESPONSE_SCHEMAS,
   SUBMISSION_VALIDATION_ERROR_EXAMPLES,
+  ALL_SUBMISSIONS_VALIDATION_ERROR_EXAMPLES,
   SERVER_ERROR_EXAMPLES,
 } from '../common/constants/api-response-schemas';
 import { KoreanParseIntPipe } from '../common/pipes/korean-parse-int.pipe';
+import {
+  SubmissionQueryDto,
+  SubmissionListResponseDto,
+} from './dto/submission-query.dto';
 
 @ApiTags('Submissions')
 @ApiBearerAuth()
@@ -188,6 +195,87 @@ export class SubmissionsController {
     } catch (error) {
       return ResponseUtil.createFutureApiResponse<null>(
         error instanceof Error ? error.message : '제출물 조회에 실패했습니다.',
+        null,
+        'failed',
+      );
+    }
+  }
+
+  @Get('all')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '전체 제출물 목록 조회 (관리자용)',
+    description: `
+      모든 제출물의 목록을 필터링, 정렬, 페이지네이션과 함께 조회합니다.
+      
+      ## 기능
+      - **필터링**: 평가 상태, 학생 ID, 학생 이름, 제목으로 필터링
+      - **정렬**: 생성일, 수정일, 점수, 제목 기준 오름차순/내림차순 정렬
+      - **페이지네이션**: 페이지 번호와 크기 지정 (최대 100개)
+      - **검색**: 학생 이름 및 제출물 제목 부분 일치 검색
+    `,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: '페이지 번호 (기본값: 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'size',
+    required: false,
+    description: '페이지 크기 (기본값: 20, 최대: 100)',
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    description: '정렬 기준 (기본값: createdAt,DESC)',
+    example: 'createdAt,DESC',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: '평가 상태 필터',
+    enum: ['pending', 'processing', 'completed', 'failed'],
+  })
+  @ApiQuery({
+    name: 'studentId',
+    required: false,
+    description: '학생 ID 필터',
+    example: 123,
+  })
+  @ApiQuery({
+    name: 'studentName',
+    required: false,
+    description: '학생 이름 검색 (부분 일치)',
+    example: '홍길동',
+  })
+  @ApiQuery({
+    name: 'title',
+    required: false,
+    description: '제출물 제목 검색 (부분 일치)',
+    example: 'English Essay',
+  })
+  @ApiResponse(API_RESPONSE_SCHEMAS.ALL_SUBMISSIONS_SUCCESS)
+  @ApiResponse(ALL_SUBMISSIONS_VALIDATION_ERROR_EXAMPLES)
+  @ApiResponse(API_RESPONSE_SCHEMAS.AUTHENTICATION_REQUIRED)
+  @ApiResponse(SERVER_ERROR_EXAMPLES)
+  async getAllSubmissions(
+    @Query() queryDto: SubmissionQueryDto,
+  ): Promise<FutureApiResponse<SubmissionListResponseDto | null>> {
+    try {
+      const result = await this.submissionsService.getAllSubmissions(queryDto);
+
+      return ResponseUtil.createFutureApiResponse(
+        '전체 제출물 목록 조회에 성공했습니다.',
+        result,
+      );
+    } catch (error) {
+      return ResponseUtil.createFutureApiResponse<null>(
+        error instanceof Error
+          ? error.message
+          : '전체 제출물 목록 조회에 실패했습니다.',
         null,
         'failed',
       );
