@@ -4,11 +4,8 @@ import * as request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { Repository, DataSource } from 'typeorm';
-import {
-  Essay,
-  EvaluationStatus,
-  ComponentType,
-} from '../src/essays/entities/essay.entity';
+import { Essay, EvaluationStatus } from '../src/essays/entities/essay.entity';
+import { ComponentType } from '../src/essays/enums/component-type.enum';
 import { Student } from '../src/students/entities/student.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';

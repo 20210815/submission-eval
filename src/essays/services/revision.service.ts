@@ -9,6 +9,11 @@ import { Repository } from 'typeorm';
 import { Revision, RevisionStatus } from '../entities/revision.entity';
 import { Essay, EvaluationStatus } from '../entities/essay.entity';
 import { CreateRevisionDto, RevisionResponseDto } from '../dto/revision.dto';
+import {
+  EvaluationLog,
+  LogType,
+  LogStatus,
+} from '../entities/evaluation-log.entity';
 import { OpenAIService } from './openai.service';
 import { TextHighlightingService } from './text-highlighting.service';
 import { NotificationService } from './notification.service';
@@ -23,6 +28,8 @@ export class RevisionService {
     private revisionRepository: Repository<Revision>,
     @InjectRepository(Essay)
     private essayRepository: Repository<Essay>,
+    @InjectRepository(EvaluationLog)
+    private evaluationLogRepository: Repository<EvaluationLog>,
     private openAIService: OpenAIService,
     private textHighlightingService: TextHighlightingService,
     private notificationService: NotificationService,
@@ -137,17 +144,71 @@ export class RevisionService {
 
       traceId = `revision-${revisionId}-${Date.now()}`;
 
+      // AI 평가 시작 로그
+      await this.logEvaluation(
+        revision.essayId,
+        LogType.AI_EVALUATION,
+        LogStatus.STARTED,
+        {
+          traceId,
+          requestData: {
+            revisionId,
+            title: revision.essay.title,
+            componentType: revision.componentType,
+          },
+        },
+      );
+
       // AI 평가 수행
+      const aiStartTime = Date.now();
       const aiResult = await this.openAIService.evaluateEssay(
         revision.essay.title,
         revision.essay.submitText,
         revision.componentType,
       );
 
+      // AI 평가 성공 로그
+      await this.logEvaluation(
+        revision.essayId,
+        LogType.AI_EVALUATION,
+        LogStatus.SUCCESS,
+        {
+          traceId,
+          latency: Date.now() - aiStartTime,
+          responseData: aiResult,
+        },
+      );
+
+      // 텍스트 하이라이팅 시작 로그
+      await this.logEvaluation(
+        revision.essayId,
+        LogType.TEXT_HIGHLIGHTING,
+        LogStatus.STARTED,
+        {
+          traceId,
+          requestData: {
+            highlights: aiResult.highlights,
+          },
+        },
+      );
+
       // 텍스트 하이라이팅
+      const highlightStartTime = Date.now();
       const highlightSubmitText = this.textHighlightingService.highlightText(
         revision.essay.submitText,
         aiResult.highlights,
+      );
+
+      // 텍스트 하이라이팅 성공 로그
+      await this.logEvaluation(
+        revision.essayId,
+        LogType.TEXT_HIGHLIGHTING,
+        LogStatus.SUCCESS,
+        {
+          traceId,
+          latency: Date.now() - highlightStartTime,
+          responseData: { highlightedText: highlightSubmitText },
+        },
       );
 
       const apiLatency = Date.now() - startTime;
@@ -183,6 +244,24 @@ export class RevisionService {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
 
+      // 실패 로그 기록
+      const revision = await this.revisionRepository.findOne({
+        where: { id: revisionId },
+      });
+
+      if (revision) {
+        await this.logEvaluation(
+          revision.essayId,
+          LogType.AI_EVALUATION,
+          LogStatus.FAILED,
+          {
+            traceId,
+            latency: apiLatency,
+            errorMessage,
+          },
+        );
+      }
+
       // 실패 상태로 업데이트
       await this.revisionRepository.update(revisionId, {
         status: RevisionStatus.FAILED,
@@ -193,11 +272,7 @@ export class RevisionService {
 
       this.logger.error(`Revision ${revisionId} failed:`, error);
 
-      // 실패 알림 발송
-      const revision = await this.revisionRepository.findOne({
-        where: { id: revisionId },
-      });
-
+      // 실패 알림 발송 (이미 조회한 revision 재사용)
       if (revision) {
         await this.notificationService.notifyEvaluationFailure(
           revision.essayId,
@@ -220,6 +295,69 @@ export class RevisionService {
       this.cacheService.del(essayKey),
       this.cacheService.del(studentEssaysKey),
     ]);
+  }
+
+  private async logEvaluation(
+    essayId: number,
+    type: LogType,
+    status: LogStatus,
+    data: {
+      requestUri?: string;
+      latency?: number;
+      requestData?: any;
+      responseData?: any;
+      errorMessage?: string;
+      traceId?: string;
+    },
+  ): Promise<void> {
+    try {
+      // 에세이가 존재하는지 확인
+      const essayExists = await this.essayRepository.findOne({
+        where: { id: essayId },
+      });
+
+      if (!essayExists) {
+        this.logger.warn(
+          `Cannot log evaluation for non-existent essay ID: ${essayId}`,
+        );
+        return;
+      }
+
+      const log = new EvaluationLog();
+      log.essayId = essayId;
+      log.type = type;
+      log.status = status;
+      if (data.requestUri) {
+        log.requestUri = data.requestUri;
+      }
+
+      if (data.latency !== undefined) {
+        log.latency = data.latency;
+      }
+
+      if (data.requestData) {
+        log.requestData = JSON.stringify(data.requestData);
+      }
+
+      if (data.responseData) {
+        log.responseData = JSON.stringify(data.responseData);
+      }
+
+      if (data.errorMessage) {
+        log.errorMessage = data.errorMessage;
+      }
+
+      if (data.traceId) {
+        log.traceId = data.traceId;
+      }
+
+      await this.evaluationLogRepository.save(log);
+    } catch (error) {
+      this.logger.error(
+        `Failed to log evaluation for essay ${essayId}:`,
+        error,
+      );
+    }
   }
 
   private mapToResponseDto(revision: Revision): RevisionResponseDto {
