@@ -39,7 +39,13 @@ export class RevisionService {
   async createRevision(
     createRevisionDto: CreateRevisionDto,
   ): Promise<RevisionResponseDto> {
-    const { essayId, revisionReason } = createRevisionDto;
+    const { submissionId } = createRevisionDto;
+
+    // submissionId를 숫자로 변환 (기존 에세이 ID와 매핑)
+    const essayId = parseInt(submissionId, 10);
+    if (isNaN(essayId)) {
+      throw new NotFoundException('유효하지 않은 submission ID입니다.');
+    }
 
     // 에세이 존재 확인
     const essay = await this.essayRepository.findOne({
@@ -68,7 +74,6 @@ export class RevisionService {
       essayId,
       studentId: essay.studentId,
       componentType: essay.componentType,
-      revisionReason,
       status: RevisionStatus.PENDING,
     });
 

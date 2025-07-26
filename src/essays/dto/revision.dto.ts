@@ -1,24 +1,16 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ComponentType } from '../enums/component-type.enum';
 import { RevisionStatus } from '../entities/revision.entity';
 
 export class CreateRevisionDto {
   @ApiProperty({
-    description: '에세이 ID',
-    example: 1,
+    description: 'Submission ID',
+    example: 'sub_12345',
   })
-  @IsNumber()
-  @IsNotEmpty()
-  essayId: number;
-
-  @ApiPropertyOptional({
-    description: '재평가 사유',
-    example: '초기 평가에서 오류가 발생하여 재평가 요청',
-  })
-  @IsOptional()
   @IsString()
-  revisionReason?: string;
+  @IsNotEmpty()
+  submissionId: string;
 }
 
 export class RevisionResponseDto {
