@@ -101,7 +101,7 @@ export class RevisionController {
     return this.revisionService.getRevisions(page, size, sort);
   }
 
-  @Get(':id')
+  @Get(':revisionId')
   @ApiOperation({
     summary: '재평가 상세 조회',
     description: '특정 재평가의 상세 정보를 조회합니다.',
@@ -116,8 +116,8 @@ export class RevisionController {
     description: '재평가를 찾을 수 없습니다.',
   })
   async getRevisionById(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('revisionId', ParseIntPipe) revisionId: number,
   ): Promise<RevisionResponseDto> {
-    return this.revisionService.getRevisionById(id);
+    return this.revisionService.getRevisionById(revisionId);
   }
 }
