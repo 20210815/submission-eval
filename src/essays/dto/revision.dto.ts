@@ -17,8 +17,8 @@ export class RevisionResponseDto {
   @ApiProperty({ description: '재평가 ID', example: 1 })
   id: number;
 
-  @ApiProperty({ description: '에세이 ID', example: 1 })
-  essayId: number;
+  @ApiProperty({ description: '에세이 제출 ID', example: 1 })
+  submissionId: number;
 
   @ApiProperty({ description: '학생 ID', example: 123 })
   studentId: number;

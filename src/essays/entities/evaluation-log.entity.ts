@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Essay } from './essay.entity';
+import { Submission } from './submission.entity';
 import { BaseEntity } from '../../common/entities/base.entity';
 
 export enum LogType {
@@ -58,10 +58,10 @@ export class EvaluationLog extends BaseEntity {
   @Column({ type: 'varchar', length: 100, nullable: true })
   traceId: string;
 
-  @ManyToOne(() => Essay, { nullable: false, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'essay_id' })
-  essay: Essay;
+  @ManyToOne(() => Submission, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'submission_id' })
+  submission: Submission;
 
-  @Column({ name: 'essay_id' })
-  essayId: number;
+  @Column({ name: 'submission_id' })
+  submissionId: number;
 }

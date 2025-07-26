@@ -18,8 +18,8 @@ export enum EvaluationStatus {
   FAILED = 'failed',
 }
 
-@Entity('essays')
-export class Essay extends BaseEntity {
+@Entity('submissions')
+export class Submission extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -74,6 +74,6 @@ export class Essay extends BaseEntity {
   @Column({ name: 'student_id' })
   studentId: number;
 
-  @OneToMany(() => Revision, (revision: Revision) => revision.essay)
+  @OneToMany(() => Revision, (revision: Revision) => revision.submission)
   revisions: Revision[];
 }

@@ -6,18 +6,18 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { Essay, EvaluationStatus } from './entities/essay.entity';
+import { Submission, EvaluationStatus } from './entities/submission.entity';
 import {
   EvaluationLog,
   LogType,
   LogStatus,
 } from './entities/evaluation-log.entity';
 import { Student } from '../students/entities/student.entity';
-import { SubmitEssayDto } from './dto/submit-essay.dto';
+import { SubmitSubmissionDto } from './dto/submit-submission.dto';
 import {
-  EssayResponseDto,
-  SubmitEssayResponseDto,
-} from './dto/essay-response.dto';
+  SubmissionResponseDto,
+  SubmitSubmissionResponseDto,
+} from './dto/submission-response.dto';
 import { VideoProcessingService } from './services/video-processing.service';
 import { AzureStorageService } from './services/azure-storage.service';
 import { OpenAIService } from './services/openai.service';
@@ -38,13 +38,13 @@ interface AIEvaluationResult {
 }
 
 @Injectable()
-export class EssaysService {
-  private readonly logger = new Logger(EssaysService.name);
+export class SubmissionsService {
+  private readonly logger = new Logger(SubmissionsService.name);
   private readonly processingStudents = new Set<string>();
 
   constructor(
-    @InjectRepository(Essay)
-    private readonly essayRepository: Repository<Essay>,
+    @InjectRepository(Submission)
+    private readonly submissionRepository: Repository<Submission>,
     @InjectRepository(EvaluationLog)
     private readonly evaluationLogRepository: Repository<EvaluationLog>,
     @InjectRepository(Student)
@@ -60,11 +60,11 @@ export class EssaysService {
     private readonly cacheService: CacheService,
   ) {}
 
-  async submitEssay(
+  async submitSubmission(
     studentId: number,
-    dto: SubmitEssayDto,
+    dto: SubmitSubmissionDto,
     videoFile?: Express.Multer.File,
-  ): Promise<SubmitEssayResponseDto> {
+  ): Promise<SubmitSubmissionResponseDto> {
     const startTime = Date.now();
     const processingKey = `${studentId}-${dto.componentType}`;
 
@@ -77,45 +77,47 @@ export class EssaysService {
 
     this.processingStudents.add(processingKey);
 
-    // 트랜잭션 내에서 에세이 생성 및 초기 처리
-    const savedEssay = await this.dataSource.transaction(async (manager) => {
-      // componentType별 중복 제출 방지 체크
-      const existingEssay = await manager.findOne(Essay, {
-        where: {
-          studentId,
+    // 트랜잭션 내에서 제출물 생성 및 초기 처리
+    const savedSubmission = await this.dataSource.transaction(
+      async (manager) => {
+        // componentType별 중복 제출 방지 체크
+        const existingSubmission = await manager.findOne(Submission, {
+          where: {
+            studentId,
+            componentType: dto.componentType,
+          },
+        });
+
+        if (existingSubmission) {
+          throw new ConflictException(
+            `이미 ${dto.componentType} 유형의 에세이를 제출했습니다.`,
+          );
+        }
+
+        // 새 제출물 생성
+        const submission = manager.create(Submission, {
+          title: dto.title,
+          submitText: dto.submitText,
           componentType: dto.componentType,
-        },
-      });
+          studentId,
+          status: EvaluationStatus.PENDING,
+        });
 
-      if (existingEssay) {
-        throw new ConflictException(
-          `이미 ${dto.componentType} 유형의 에세이를 제출했습니다.`,
-        );
-      }
-
-      // 새 에세이 생성
-      const essay = manager.create(Essay, {
-        title: dto.title,
-        submitText: dto.submitText,
-        componentType: dto.componentType,
-        studentId,
-        status: EvaluationStatus.PENDING,
-      });
-
-      return await manager.save(Essay, essay);
-    });
+        return await manager.save(Submission, submission);
+      },
+    );
 
     try {
       // 동기 평가 프로세스 실행 (트랜잭션 외부에서 실행)
-      await this.processEssayEvaluation(savedEssay.id, videoFile);
+      await this.processSubmissionEvaluation(savedSubmission.id, videoFile);
 
       // 평가 완료 후 결과 조회
-      const evaluatedEssay = await this.essayRepository.findOne({
-        where: { id: savedEssay.id },
+      const evaluatedSubmission = await this.submissionRepository.findOne({
+        where: { id: savedSubmission.id },
       });
 
-      if (!evaluatedEssay) {
-        throw new Error('평가된 에세이를 찾을 수 없습니다.');
+      if (!evaluatedSubmission) {
+        throw new Error('평가된 제출물을 찾을 수 없습니다.');
       }
 
       // 학생 정보 조회 (캐시 적용)
@@ -124,21 +126,22 @@ export class EssaysService {
       const apiLatency = Date.now() - startTime;
 
       return {
-        essayId: evaluatedEssay.id,
+        submissionId: evaluatedSubmission.id,
         studentId: studentId,
         studentName: student?.name,
-        status: evaluatedEssay.status,
+        status: evaluatedSubmission.status,
         message:
-          evaluatedEssay.status === EvaluationStatus.COMPLETED
+          evaluatedSubmission.status === EvaluationStatus.COMPLETED
             ? null
-            : evaluatedEssay.errorMessage || '에세이 평가에 실패했습니다.',
-        score: evaluatedEssay.score ?? undefined,
-        feedback: evaluatedEssay.feedback ?? undefined,
-        highlights: evaluatedEssay.highlights ?? undefined,
-        submitText: evaluatedEssay.submitText,
-        highlightSubmitText: evaluatedEssay.highlightSubmitText ?? undefined,
-        videoUrl: evaluatedEssay.videoUrl ?? undefined,
-        audioUrl: evaluatedEssay.audioUrl ?? undefined,
+            : evaluatedSubmission.errorMessage || '제출물 평가에 실패했습니다.',
+        score: evaluatedSubmission.score ?? undefined,
+        feedback: evaluatedSubmission.feedback ?? undefined,
+        highlights: evaluatedSubmission.highlights ?? undefined,
+        submitText: evaluatedSubmission.submitText,
+        highlightSubmitText:
+          evaluatedSubmission.highlightSubmitText ?? undefined,
+        videoUrl: evaluatedSubmission.videoUrl ?? undefined,
+        audioUrl: evaluatedSubmission.audioUrl ?? undefined,
         apiLatency,
       };
     } finally {
@@ -147,88 +150,96 @@ export class EssaysService {
     }
   }
 
-  async getEssay(
-    essayId: number,
+  async getSubmission(
+    submissionId: number,
     studentId: number,
-  ): Promise<EssayResponseDto> {
-    const essay = await this.getEssayWithCache(essayId, studentId);
+  ): Promise<SubmissionResponseDto> {
+    const submission = await this.getSubmissionWithCache(
+      submissionId,
+      studentId,
+    );
 
-    if (!essay) {
-      throw new NotFoundException('에세이를 찾을 수 없습니다.');
+    if (!submission) {
+      throw new NotFoundException('제출물을 찾을 수 없습니다.');
     }
 
     return {
-      id: essay.id,
-      title: essay.title,
-      submitText: essay.submitText,
-      componentType: essay.componentType,
-      status: essay.status,
-      score: essay.score ?? undefined,
-      feedback: essay.feedback ?? undefined,
-      highlights: essay.highlights ?? undefined,
-      highlightSubmitText: essay.highlightSubmitText ?? undefined,
-      videoUrl: essay.videoUrl ?? undefined,
-      audioUrl: essay.audioUrl ?? undefined,
-      createdAt: essay.createdAt,
-      updatedAt: essay.updatedAt,
+      id: submission.id,
+      title: submission.title,
+      submitText: submission.submitText,
+      componentType: submission.componentType,
+      status: submission.status,
+      score: submission.score ?? undefined,
+      feedback: submission.feedback ?? undefined,
+      highlights: submission.highlights ?? undefined,
+      highlightSubmitText: submission.highlightSubmitText ?? undefined,
+      videoUrl: submission.videoUrl ?? undefined,
+      audioUrl: submission.audioUrl ?? undefined,
+      createdAt: submission.createdAt,
+      updatedAt: submission.updatedAt,
     };
   }
 
-  async getStudentEssays(studentId: number): Promise<EssayResponseDto[]> {
-    const cacheKey = this.cacheService.getStudentEssaysKey(studentId);
+  async getStudentSubmissions(
+    studentId: number,
+  ): Promise<SubmissionResponseDto[]> {
+    const cacheKey = this.cacheService.getStudentSubmissionsKey(studentId);
 
     // 캐시에서 조회
-    const cachedEssays =
-      await this.cacheService.get<EssayResponseDto[]>(cacheKey);
+    const cachedSubmissions =
+      await this.cacheService.get<SubmissionResponseDto[]>(cacheKey);
 
-    if (cachedEssays) {
-      return cachedEssays;
+    if (cachedSubmissions) {
+      return cachedSubmissions;
     }
 
     // DB에서 조회
-    const essays = await this.essayRepository.find({
+    const submissions = await this.submissionRepository.find({
       where: { studentId },
       order: { createdAt: 'DESC' },
     });
 
-    const essayDtos = essays.map((essay) => ({
-      id: essay.id,
-      title: essay.title,
-      submitText: essay.submitText,
-      componentType: essay.componentType,
-      status: essay.status,
-      score: essay.score ?? undefined,
-      feedback: essay.feedback ?? undefined,
-      highlights: essay.highlights ?? undefined,
-      highlightSubmitText: essay.highlightSubmitText ?? undefined,
-      videoUrl: essay.videoUrl ?? undefined,
-      audioUrl: essay.audioUrl ?? undefined,
-      createdAt: essay.createdAt,
-      updatedAt: essay.updatedAt,
+    const submissionDtos = submissions.map((submission) => ({
+      id: submission.id,
+      title: submission.title,
+      submitText: submission.submitText,
+      componentType: submission.componentType,
+      status: submission.status,
+      score: submission.score ?? undefined,
+      feedback: submission.feedback ?? undefined,
+      highlights: submission.highlights ?? undefined,
+      highlightSubmitText: submission.highlightSubmitText ?? undefined,
+      videoUrl: submission.videoUrl ?? undefined,
+      audioUrl: submission.audioUrl ?? undefined,
+      createdAt: submission.createdAt,
+      updatedAt: submission.updatedAt,
     }));
 
     // 캐시에 저장 (10분)
-    await this.cacheService.set(cacheKey, essayDtos, 10 * 60);
+    await this.cacheService.set(cacheKey, submissionDtos, 10 * 60);
 
-    return essayDtos;
+    return submissionDtos;
   }
 
-  private async processEssayEvaluation(
-    essayId: number,
+  private async processSubmissionEvaluation(
+    submissionId: number,
     videoFile?: Express.Multer.File,
   ): Promise<void> {
-    const traceId = `essay_${essayId}_${Date.now()}`;
+    const traceId = `submission_${submissionId}_${Date.now()}`;
     let processedVideo: ProcessedVideo | null = null;
 
     // 상태를 PROCESSING으로 변경
-    await this.updateEssayStatus(essayId, EvaluationStatus.PROCESSING);
+    await this.updateSubmissionStatus(
+      submissionId,
+      EvaluationStatus.PROCESSING,
+    );
 
     try {
-      const essay = await this.essayRepository.findOne({
-        where: { id: essayId },
+      const submission = await this.submissionRepository.findOne({
+        where: { id: submissionId },
       });
-      if (!essay) {
-        throw new Error('Essay not found');
+      if (!submission) {
+        throw new Error('Submission not found');
       }
 
       let videoUrl: string | null = null;
@@ -237,7 +248,7 @@ export class EssaysService {
       // 1. MP4 파일 처리 (영상/음성 분리)
       if (videoFile) {
         await this.logEvaluation(
-          essayId,
+          submissionId,
           LogType.VIDEO_PROCESSING,
           LogStatus.STARTED,
           {
@@ -256,7 +267,7 @@ export class EssaysService {
           )) as ProcessedVideo;
 
           await this.logEvaluation(
-            essayId,
+            submissionId,
             LogType.VIDEO_PROCESSING,
             LogStatus.SUCCESS,
             {
@@ -270,7 +281,7 @@ export class EssaysService {
           );
         } catch (error) {
           await this.logEvaluation(
-            essayId,
+            submissionId,
             LogType.VIDEO_PROCESSING,
             LogStatus.FAILED,
             {
@@ -285,7 +296,7 @@ export class EssaysService {
 
         // 2. Azure Blob Storage 업로드
         await this.logEvaluation(
-          essayId,
+          submissionId,
           LogType.AZURE_UPLOAD,
           LogStatus.STARTED,
           {
@@ -312,7 +323,7 @@ export class EssaysService {
           audioUrl = uploadedAudio.sasUrl;
 
           await this.logEvaluation(
-            essayId,
+            submissionId,
             LogType.AZURE_UPLOAD,
             LogStatus.SUCCESS,
             {
@@ -330,7 +341,7 @@ export class EssaysService {
           processedVideo = null;
         } catch (error) {
           await this.logEvaluation(
-            essayId,
+            submissionId,
             LogType.AZURE_UPLOAD,
             LogStatus.FAILED,
             {
@@ -346,14 +357,14 @@ export class EssaysService {
 
       // 3. OpenAI API 호출
       await this.logEvaluation(
-        essayId,
+        submissionId,
         LogType.AI_EVALUATION,
         LogStatus.STARTED,
         {
           traceId,
           requestData: {
-            title: essay.title,
-            componentType: essay.componentType,
+            title: submission.title,
+            componentType: submission.componentType,
           },
         },
       );
@@ -361,14 +372,14 @@ export class EssaysService {
       const aiStartTime = Date.now();
       let aiResult: AIEvaluationResult;
       try {
-        aiResult = await this.openAIService.evaluateEssay(
-          essay.title,
-          essay.submitText,
-          essay.componentType,
+        aiResult = await this.openAIService.evaluateSubmission(
+          submission.title,
+          submission.submitText,
+          submission.componentType,
         );
 
         await this.logEvaluation(
-          essayId,
+          submissionId,
           LogType.AI_EVALUATION,
           LogStatus.SUCCESS,
           {
@@ -379,7 +390,7 @@ export class EssaysService {
         );
       } catch (error) {
         await this.logEvaluation(
-          essayId,
+          submissionId,
           LogType.AI_EVALUATION,
           LogStatus.FAILED,
           {
@@ -394,7 +405,7 @@ export class EssaysService {
 
       // 4. 텍스트 하이라이팅
       await this.logEvaluation(
-        essayId,
+        submissionId,
         LogType.TEXT_HIGHLIGHTING,
         LogStatus.STARTED,
         {
@@ -407,12 +418,12 @@ export class EssaysService {
       let highlightedText: string;
       try {
         highlightedText = this.textHighlightingService.highlightText(
-          essay.submitText,
+          submission.submitText,
           aiResult?.highlights || [],
         );
 
         await this.logEvaluation(
-          essayId,
+          submissionId,
           LogType.TEXT_HIGHLIGHTING,
           LogStatus.SUCCESS,
           {
@@ -423,7 +434,7 @@ export class EssaysService {
         );
       } catch (error) {
         await this.logEvaluation(
-          essayId,
+          submissionId,
           LogType.TEXT_HIGHLIGHTING,
           LogStatus.FAILED,
           {
@@ -437,7 +448,7 @@ export class EssaysService {
       }
 
       // 5. 결과 저장
-      await this.essayRepository.update(essayId, {
+      await this.submissionRepository.update(submissionId, {
         status: EvaluationStatus.COMPLETED,
         score: aiResult?.score || 0,
         feedback: aiResult?.feedback || '',
@@ -448,8 +459,8 @@ export class EssaysService {
         errorMessage: null,
       });
     } catch (error) {
-      await this.updateEssayStatus(
-        essayId,
+      await this.updateSubmissionStatus(
+        submissionId,
         EvaluationStatus.FAILED,
         error instanceof Error ? error.message : 'Unknown error',
       );
@@ -462,21 +473,23 @@ export class EssaysService {
         );
       }
 
-      // 실패 알림 발송 (essay 변수를 다시 조회)
-      const essayForNotification = await this.essayRepository.findOne({
-        where: { id: essayId },
-      });
+      // 실패 알림 발송 (submission 변수를 다시 조회)
+      const submissionForNotification = await this.submissionRepository.findOne(
+        {
+          where: { id: submissionId },
+        },
+      );
       void this.notificationService.notifyEvaluationFailure(
-        essayId,
-        essayForNotification?.studentId || 0,
+        submissionId,
+        submissionForNotification?.studentId || 0,
         error instanceof Error ? error.message : 'Unknown error',
         traceId,
       );
 
       // AI 평가 실패 시 자동으로 revision 생성
-      if (essayForNotification) {
-        await this.createRevisionForFailedEssay(
-          essayForNotification,
+      if (submissionForNotification) {
+        await this.createRevisionForFailedSubmission(
+          submissionForNotification,
           error instanceof Error ? error.message : 'Unknown error',
         );
       }
@@ -485,28 +498,28 @@ export class EssaysService {
     }
   }
 
-  private async updateEssayStatus(
-    essayId: number,
+  private async updateSubmissionStatus(
+    submissionId: number,
     status: EvaluationStatus,
     errorMessage?: string,
   ): Promise<void> {
-    const updateData: Partial<Essay> = { status };
+    const updateData: Partial<Submission> = { status };
     if (errorMessage) {
       updateData.errorMessage = errorMessage;
     }
 
-    await this.essayRepository.update(essayId, updateData);
+    await this.submissionRepository.update(submissionId, updateData);
   }
 
-  private async createRevisionForFailedEssay(
-    essay: Essay,
+  private async createRevisionForFailedSubmission(
+    submission: Submission,
     errorMessage: string,
   ): Promise<void> {
     try {
       const revision = this.revisionRepository.create({
-        essayId: essay.id,
-        studentId: essay.studentId,
-        componentType: essay.componentType,
+        submissionId: submission.id,
+        studentId: submission.studentId,
+        componentType: submission.componentType,
         revisionReason: `AI 평가 실패로 인한 자동 재평가 요청: ${errorMessage}`,
         status: RevisionStatus.PENDING,
       });
@@ -514,17 +527,17 @@ export class EssaysService {
       await this.revisionRepository.save(revision);
 
       this.logger.log(
-        `Auto-created revision for failed essay evaluation. Essay ID: ${essay.id}, Revision ID: ${revision.id}`,
+        `Auto-created revision for failed submission evaluation. Submission ID: ${submission.id}, Revision ID: ${revision.id}`,
       );
     } catch (revisionError) {
       this.logger.error(
-        `Failed to create revision for essay ${essay.id}: ${revisionError instanceof Error ? revisionError.message : 'Unknown error'}`,
+        `Failed to create revision for submission ${submission.id}: ${revisionError instanceof Error ? revisionError.message : 'Unknown error'}`,
       );
     }
   }
 
   async logEvaluation(
-    essayId: number,
+    submissionId: number,
     type: LogType,
     status: LogStatus,
     data: {
@@ -536,20 +549,20 @@ export class EssaysService {
       traceId?: string;
     },
   ): Promise<void> {
-    // 에세이가 존재하는지 확인 (테스트 환경에서 FK 제약조건 오류 방지)
-    const essayExists = await this.essayRepository.findOne({
-      where: { id: essayId },
+    // 제출물이 존재하는지 확인 (테스트 환경에서 FK 제약조건 오류 방지)
+    const submissionExists = await this.submissionRepository.findOne({
+      where: { id: submissionId },
     });
 
-    if (!essayExists) {
+    if (!submissionExists) {
       this.logger.warn(
-        `Cannot log evaluation for non-existent essay ID: ${essayId}`,
+        `Cannot log evaluation for non-existent submission ID: ${submissionId}`,
       );
       return;
     }
 
     const log = this.evaluationLogRepository.create({
-      essayId,
+      submissionId,
       type,
       status,
       ...data,
@@ -587,52 +600,56 @@ export class EssaysService {
   }
 
   /**
-   * 캐시를 사용하여 에세이 조회
+   * 캐시를 사용하여 제출물 조회
    */
-  private async getEssayWithCache(
-    essayId: number,
+  private async getSubmissionWithCache(
+    submissionId: number,
     studentId: number,
-  ): Promise<Essay | null> {
-    const cacheKey = this.cacheService.getEssayKey(essayId);
+  ): Promise<Submission | null> {
+    const cacheKey = this.cacheService.getSubmissionKey(submissionId);
 
     // 캐시에서 조회
-    const cachedEssay = await this.cacheService.get<Essay>(cacheKey);
+    const cachedSubmission = await this.cacheService.get<Submission>(cacheKey);
 
-    if (cachedEssay) {
-      return cachedEssay;
+    if (cachedSubmission) {
+      return cachedSubmission;
     }
 
     // DB에서 조회
-    const essay = await this.essayRepository.findOne({
-      where: { id: essayId, studentId },
+    const submission = await this.submissionRepository.findOne({
+      where: { id: submissionId, studentId },
     });
 
-    if (essay) {
+    if (submission) {
       // 캐시에 저장 (30분)
-      await this.cacheService.set(cacheKey, essay, 30 * 60);
+      await this.cacheService.set(cacheKey, submission, 30 * 60);
     }
 
-    return essay;
+    return submission;
   }
 
   /**
-   * 학생 에세이 목록 캐시 무효화
+   * 학생 제출물 목록 캐시 무효화
    */
-  private async invalidateStudentEssaysCache(studentId: number) {
-    const cacheKey = this.cacheService.getStudentEssaysKey(studentId);
+  private async invalidateStudentSubmissionsCache(studentId: number) {
+    const cacheKey = this.cacheService.getStudentSubmissionsKey(studentId);
     await this.cacheService.del(cacheKey);
   }
 
   /**
-   * 에세이 관련 캐시 무효화
+   * 제출물 관련 캐시 무효화
    */
-  private async invalidateEssayCache(essayId: number, studentId: number) {
-    const essayKey = this.cacheService.getEssayKey(essayId);
-    const studentEssaysKey = this.cacheService.getStudentEssaysKey(studentId);
+  private async invalidateSubmissionCache(
+    submissionId: number,
+    studentId: number,
+  ) {
+    const submissionKey = this.cacheService.getSubmissionKey(submissionId);
+    const studentSubmissionsKey =
+      this.cacheService.getStudentSubmissionsKey(studentId);
 
     await Promise.all([
-      this.cacheService.del(essayKey),
-      this.cacheService.del(studentEssaysKey),
+      this.cacheService.del(submissionKey),
+      this.cacheService.del(studentSubmissionsKey),
     ]);
   }
 }

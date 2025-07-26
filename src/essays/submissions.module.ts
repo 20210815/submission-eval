@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EssaysController } from './essays.controller';
-import { EssaysService } from './essays.service';
-import { Essay } from './entities/essay.entity';
+import { SubmissionsController } from './submissions.controller';
+import { SubmissionsService } from './submissions.service';
+import { Submission } from './entities/submission.entity';
 import { EvaluationLog } from './entities/evaluation-log.entity';
 import { Revision } from './entities/revision.entity';
 import { Student } from '../students/entities/student.entity';
@@ -17,12 +17,12 @@ import { CacheCustomModule } from '../cache/cache.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Essay, EvaluationLog, Revision, Student]),
+    TypeOrmModule.forFeature([Submission, EvaluationLog, Revision, Student]),
     CacheCustomModule,
   ],
-  controllers: [EssaysController, RevisionController],
+  controllers: [SubmissionsController, RevisionController],
   providers: [
-    EssaysService,
+    SubmissionsService,
     VideoProcessingService,
     AzureStorageService,
     OpenAIService,
@@ -30,6 +30,6 @@ import { CacheCustomModule } from '../cache/cache.module';
     NotificationService,
     RevisionService,
   ],
-  exports: [EssaysService],
+  exports: [SubmissionsService],
 })
-export class EssaysModule {}
+export class SubmissionsModule {}

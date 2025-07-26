@@ -1,7 +1,7 @@
 import { AuthModule } from './auth/auth.module';
 import { StudentsModule } from './students/students.module';
 import { HealthModule } from './health/health.module';
-import { EssaysModule } from './essays/essays.module';
+import { SubmissionsModule } from './essays/submissions.module';
 import { CacheCustomModule } from './cache/cache.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { Module, MiddlewareConsumer } from '@nestjs/common';
@@ -17,7 +17,7 @@ import { AppService } from './app.service';
     AuthModule,
     StudentsModule,
     HealthModule,
-    EssaysModule,
+    SubmissionsModule,
     CacheCustomModule,
     SchedulerModule,
     ConfigModule.forRoot({ isGlobal: true }),

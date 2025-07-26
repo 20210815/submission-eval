@@ -58,7 +58,7 @@ async function bootstrap() {
     .setVersion('1.1.0')
     .addBearerAuth()
     .addTag('Authentication', 'User signup, login, and JWT token management')
-    .addTag('Essays', 'Essay submission, retrieval, and AI evaluation')
+    .addTag('Submissions', 'Essay submission, retrieval, and AI evaluation')
     .addTag('Health', 'System health monitoring')
     .build();
 

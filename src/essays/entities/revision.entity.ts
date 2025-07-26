@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Essay } from './essay.entity';
+import { Submission } from './submission.entity';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { ComponentType } from '../enums/component-type.enum';
 
@@ -21,14 +21,14 @@ export class Revision extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'essay_id' })
-  essayId: number;
+  @Column({ name: 'submission_id' })
+  submissionId: number;
 
-  @ManyToOne(() => Essay, {
+  @ManyToOne(() => Submission, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'essay_id' })
-  essay: Essay;
+  @JoinColumn({ name: 'submission_id' })
+  submission: Submission;
 
   @Column({ name: 'student_id' })
   studentId: number;

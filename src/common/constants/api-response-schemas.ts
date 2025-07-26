@@ -35,8 +35,8 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  // Essay API responses
-  ESSAY_SUBMIT_SUCCESS: {
+  // Submission API responses
+  SUBMISSION_SUBMIT_SUCCESS: {
     status: 200,
     description: '에세이 제출 성공',
     schema: {
@@ -44,7 +44,7 @@ export const API_RESPONSE_SCHEMAS = {
         result: 'ok',
         message: '에세이가 성공적으로 제출되었습니다.',
         data: {
-          essayId: 1,
+          submissionId: 1,
           studentId: 123,
           studentName: '홍길동',
           status: 'COMPLETED',
@@ -63,17 +63,18 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  ESSAY_GET_SUCCESS: {
+  SUBMISSION_GET_SUCCESS: {
     status: 200,
-    description: '에세이 조회 성공',
+    description: '제출물 조회 성공',
     schema: {
       example: {
         result: 'ok',
-        message: '에세이 조회에 성공했습니다.',
+        message: '제출물 조회에 성공했습니다.',
         data: {
           id: 1,
-          title: 'My English Essay',
-          submitText: 'This is my essay about English language learning...',
+          title: 'My English Submission',
+          submitText:
+            'This is my submission about English language learning...',
           componentType: 'WRITING',
           status: 'COMPLETED',
           score: 85,
@@ -81,9 +82,9 @@ export const API_RESPONSE_SCHEMAS = {
             '문법과 어휘 사용이 우수합니다. 다만 문장 구조를 더 다양하게 사용하면 좋겠습니다.',
           highlights: ['excellent vocabulary', 'good grammar'],
           highlightSubmitText:
-            'This is my essay with <b>excellent vocabulary</b>...',
-          videoUrl: 'https://storage.example.com/videos/essay1_video.mp4',
-          audioUrl: 'https://storage.example.com/audios/essay1_audio.mp3',
+            'This is my submission with <b>excellent vocabulary</b>...',
+          videoUrl: 'https://storage.example.com/videos/submission1_video.mp4',
+          audioUrl: 'https://storage.example.com/audios/submission1_audio.mp3',
           createdAt: '2023-12-01T10:00:00Z',
           updatedAt: '2023-12-01T10:30:00Z',
         },
@@ -91,18 +92,19 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  ESSAY_LIST_SUCCESS: {
+  SUBMISSION_LIST_SUCCESS: {
     status: 200,
-    description: '에세이 목록 조회 성공',
+    description: '제출물 목록 조회 성공',
     schema: {
       example: {
         result: 'ok',
-        message: '에세이 목록 조회에 성공했습니다.',
+        message: '제출물 목록 조회에 성공했습니다.',
         data: [
           {
             id: 1,
-            title: 'My English Essay',
-            submitText: 'This is my essay about English language learning...',
+            title: 'My English Submission',
+            submitText:
+              'This is my submission about English language learning...',
             componentType: 'WRITING',
             status: 'COMPLETED',
             score: 85,
@@ -241,13 +243,13 @@ export const API_RESPONSE_SCHEMAS = {
   },
 
   // 404 Not Found
-  ESSAY_NOT_FOUND: {
+  SUBMISSION_NOT_FOUND: {
     status: 404,
-    description: '에세이를 찾을 수 없음',
+    description: '제출물을 찾을 수 없음',
     schema: {
       example: {
         result: 'failed',
-        message: '해당 에세이를 찾을 수 없습니다.',
+        message: '해당 제출물을 찾을 수 없습니다.',
       },
     },
   },
@@ -265,7 +267,7 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
-  ESSAY_ALREADY_SUBMITTED: {
+  SUBMISSION_ALREADY_SUBMITTED: {
     status: 409,
     description: '이미 해당 유형의 에세이를 제출함',
     schema: {
@@ -347,8 +349,8 @@ export const API_RESPONSE_SCHEMAS = {
   },
 };
 
-// Essay validation error examples
-export const ESSAY_VALIDATION_ERROR_EXAMPLES = {
+// Submission validation error examples
+export const SUBMISSION_VALIDATION_ERROR_EXAMPLES = {
   status: 400,
   description: 'Validation error responses',
   content: {

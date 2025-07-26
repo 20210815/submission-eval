@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { Essay, EvaluationStatus } from '../essays/entities/essay.entity';
+import {
+  Submission,
+  EvaluationStatus,
+} from '../essays/entities/submission.entity';
 import { Revision, RevisionStatus } from '../essays/entities/revision.entity';
 import { OpenAIService } from '../essays/services/openai.service';
 import { TextHighlightingService } from '../essays/services/text-highlighting.service';
@@ -26,8 +29,8 @@ export class SchedulerService {
   private readonly logger = new Logger(SchedulerService.name);
 
   constructor(
-    @InjectRepository(Essay)
-    private essayRepository: Repository<Essay>,
+    @InjectRepository(Submission)
+    private submissionRepository: Repository<Submission>,
     @InjectRepository(Revision)
     private revisionRepository: Repository<Revision>,
     private openAIService: OpenAIService,
@@ -37,18 +40,18 @@ export class SchedulerService {
 
   /**
    * 자동 재시도 작업 - 매시간 실행
-   * 실패한 에세이들을 1시간마다 재평가 시도
+   * 실패한 제출물들을 1시간마다 재평가 시도
    */
   @Cron(CronExpression.EVERY_HOUR)
-  async autoRetryFailedEssays(): Promise<void> {
-    this.logger.log('Starting auto-retry job for failed essays');
+  async autoRetryFailedSubmissions(): Promise<void> {
+    this.logger.log('Starting auto-retry job for failed submissions');
 
     try {
-      // 1시간 전보다 오래된 실패한 에세이들 조회
+      // 1시간 전보다 오래된 실패한 제출물들 조회
       const oneHourAgo = new Date();
       oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 
-      const failedEssays = await this.essayRepository.find({
+      const failedSubmissions = await this.submissionRepository.find({
         where: {
           status: EvaluationStatus.FAILED,
           updatedAt: LessThan(oneHourAgo),
@@ -57,15 +60,17 @@ export class SchedulerService {
         take: 10, // 한 번에 최대 10개만 처리
       });
 
-      this.logger.log(`Found ${failedEssays.length} failed essays to retry`);
+      this.logger.log(
+        `Found ${failedSubmissions.length} failed submissions to retry`,
+      );
 
-      for (const essay of failedEssays) {
+      for (const submission of failedSubmissions) {
         try {
-          await this.retryEssayEvaluation(essay);
-          this.logger.log(`Successfully retried essay ${essay.id}`);
+          await this.retrySubmissionEvaluation(submission);
+          this.logger.log(`Successfully retried submission ${submission.id}`);
         } catch (error) {
           this.logger.error(
-            `Failed to retry essay ${essay.id}:`,
+            `Failed to retry submission ${submission.id}:`,
             error instanceof Error ? error.message : error,
           );
         }
@@ -101,31 +106,33 @@ export class SchedulerService {
     await this.generateStats('monthly', 30);
   }
 
-  private async retryEssayEvaluation(essay: Essay): Promise<void> {
+  private async retrySubmissionEvaluation(
+    submission: Submission,
+  ): Promise<void> {
     const startTime = Date.now();
-    const traceId = `retry-${essay.id}-${Date.now()}`;
+    const traceId = `retry-${submission.id}-${Date.now()}`;
 
     try {
       // 상태를 처리 중으로 변경
-      await this.essayRepository.update(essay.id, {
+      await this.submissionRepository.update(submission.id, {
         status: EvaluationStatus.PROCESSING,
       });
 
       // AI 평가 수행
-      const aiResult = await this.openAIService.evaluateEssay(
-        essay.title,
-        essay.submitText,
-        essay.componentType,
+      const aiResult = await this.openAIService.evaluateSubmission(
+        submission.title,
+        submission.submitText,
+        submission.componentType,
       );
 
       // 텍스트 하이라이팅
       const highlightSubmitText = this.textHighlightingService.highlightText(
-        essay.submitText,
+        submission.submitText,
         aiResult.highlights,
       );
 
-      // 에세이 업데이트
-      await this.essayRepository.update(essay.id, {
+      // 제출물 업데이트
+      await this.submissionRepository.update(submission.id, {
         status: EvaluationStatus.COMPLETED,
         score: aiResult.score,
         feedback: aiResult.feedback,
@@ -136,9 +143,9 @@ export class SchedulerService {
 
       // 성공한 재시도 로그를 위한 revision 생성
       const revision = this.revisionRepository.create({
-        essayId: essay.id,
-        studentId: essay.studentId,
-        componentType: essay.componentType,
+        submissionId: submission.id,
+        studentId: submission.studentId,
+        componentType: submission.componentType,
         revisionReason: 'Auto-retry for failed evaluation',
         status: RevisionStatus.COMPLETED,
         score: aiResult.score,
@@ -152,24 +159,24 @@ export class SchedulerService {
       await this.revisionRepository.save(revision);
 
       this.logger.log(
-        `Auto-retry successful for essay ${essay.id} with score: ${aiResult.score}`,
+        `Auto-retry successful for submission ${submission.id} with score: ${aiResult.score}`,
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       const apiLatency = Date.now() - startTime;
 
-      // 에세이 실패 상태 유지
-      await this.essayRepository.update(essay.id, {
+      // 제출물 실패 상태 유지
+      await this.submissionRepository.update(submission.id, {
         status: EvaluationStatus.FAILED,
         errorMessage,
       });
 
       // 실패한 재시도 로그를 위한 revision 생성
       const revision = this.revisionRepository.create({
-        essayId: essay.id,
-        studentId: essay.studentId,
-        componentType: essay.componentType,
+        submissionId: submission.id,
+        studentId: submission.studentId,
+        componentType: submission.componentType,
         revisionReason: 'Auto-retry for failed evaluation',
         status: RevisionStatus.FAILED,
         errorMessage,
@@ -181,8 +188,8 @@ export class SchedulerService {
 
       // 실패 알림 발송
       await this.notificationService.notifyEvaluationFailure(
-        essay.id,
-        essay.studentId,
+        submission.id,
+        submission.studentId,
         errorMessage,
         traceId,
       );
@@ -203,36 +210,40 @@ export class SchedulerService {
       startDate.setDate(startDate.getDate() - days);
 
       // 기간 내 통계 집계
-      const [essays, totalCount] = await this.essayRepository.findAndCount({
-        where: {
-          createdAt: LessThan(endDate),
-        },
-      });
+      const [submissions, totalCount] =
+        await this.submissionRepository.findAndCount({
+          where: {
+            createdAt: LessThan(endDate),
+          },
+        });
 
-      const successfulCount = essays.filter(
-        (essay) => essay.status === EvaluationStatus.COMPLETED,
+      const successfulCount = submissions.filter(
+        (submission) => submission.status === EvaluationStatus.COMPLETED,
       ).length;
 
-      const failedCount = essays.filter(
-        (essay) => essay.status === EvaluationStatus.FAILED,
+      const failedCount = submissions.filter(
+        (submission) => submission.status === EvaluationStatus.FAILED,
       ).length;
 
-      const pendingCount = essays.filter(
-        (essay) =>
-          essay.status === EvaluationStatus.PENDING ||
-          essay.status === EvaluationStatus.PROCESSING,
+      const pendingCount = submissions.filter(
+        (submission) =>
+          submission.status === EvaluationStatus.PENDING ||
+          submission.status === EvaluationStatus.PROCESSING,
       ).length;
 
       // 평균 점수 계산
-      const completedEssays = essays.filter(
-        (essay) =>
-          essay.status === EvaluationStatus.COMPLETED && essay.score !== null,
+      const completedSubmissions = submissions.filter(
+        (submission) =>
+          submission.status === EvaluationStatus.COMPLETED &&
+          submission.score !== null,
       );
 
       const averageScore =
-        completedEssays.length > 0
-          ? completedEssays.reduce((sum, essay) => sum + essay.score!, 0) /
-            completedEssays.length
+        completedSubmissions.length > 0
+          ? completedSubmissions.reduce(
+              (sum, submission) => sum + submission.score!,
+              0,
+            ) / completedSubmissions.length
           : null;
 
       // 통계 데이터 생성 (실제로는 DB에 저장해야 함)

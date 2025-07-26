@@ -1,36 +1,36 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { EssaysController } from './essays.controller';
-import { EssaysService } from './essays.service';
-import { SubmitEssayDto } from './dto/submit-essay.dto';
-import { EvaluationStatus } from './entities/essay.entity';
+import { SubmissionsController } from './submissions.controller';
+import { SubmissionsService } from './submissions.service';
+import { SubmitSubmissionDto } from './dto/submit-submission.dto';
+import { EvaluationStatus } from './entities/submission.entity';
 import { ComponentType } from './enums/component-type.enum';
 import {
-  SubmitEssayResponseDto,
-  EssayResponseDto,
-} from './dto/essay-response.dto';
+  SubmitSubmissionResponseDto,
+  SubmissionResponseDto,
+} from './dto/submission-response.dto';
 import { Request } from 'express';
 
-describe('EssaysController', () => {
-  let controller: EssaysController;
+describe('SubmissionsController', () => {
+  let controller: SubmissionsController;
 
-  const mockEssaysService = {
-    submitEssay: jest.fn(),
-    getEssay: jest.fn(),
-    getStudentEssays: jest.fn(),
+  const mockSubmissionsService = {
+    submitSubmission: jest.fn(),
+    getSubmission: jest.fn(),
+    getStudentSubmissions: jest.fn(),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [EssaysController],
+      controllers: [SubmissionsController],
       providers: [
         {
-          provide: EssaysService,
-          useValue: mockEssaysService,
+          provide: SubmissionsService,
+          useValue: mockSubmissionsService,
         },
       ],
     }).compile();
 
-    controller = module.get<EssaysController>(EssaysController);
+    controller = module.get<SubmissionsController>(SubmissionsController);
   });
 
   afterEach(() => {
@@ -41,19 +41,19 @@ describe('EssaysController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('submitEssay', () => {
+  describe('submitSubmission', () => {
     const mockRequest = {
       user: { sub: 1 },
     } as Request & { user: { sub: number } };
 
-    const submitEssayDto: SubmitEssayDto = {
+    const submitSubmissionDto: SubmitSubmissionDto = {
       title: '테스트 에세이',
       submitText: '테스트 내용',
       componentType: ComponentType.WRITING,
     };
 
-    const mockSubmitResult: SubmitEssayResponseDto = {
-      essayId: 1,
+    const mockSubmitResult: SubmitSubmissionResponseDto = {
+      submissionId: 1,
       studentId: 1,
       studentName: '테스트학생',
       status: EvaluationStatus.COMPLETED,
@@ -66,14 +66,19 @@ describe('EssaysController', () => {
       apiLatency: 1000,
     };
 
-    it('should submit essay successfully', async () => {
-      mockEssaysService.submitEssay.mockResolvedValue(mockSubmitResult);
+    it('should submit submission successfully', async () => {
+      mockSubmissionsService.submitSubmission.mockResolvedValue(
+        mockSubmitResult,
+      );
 
-      const result = await controller.submitEssay(mockRequest, submitEssayDto);
+      const result = await controller.submitSubmission(
+        mockRequest,
+        submitSubmissionDto,
+      );
 
-      expect(mockEssaysService.submitEssay).toHaveBeenCalledWith(
+      expect(mockSubmissionsService.submitSubmission).toHaveBeenCalledWith(
         1,
-        submitEssayDto,
+        submitSubmissionDto,
         undefined,
       );
       expect(result).toEqual({
@@ -83,7 +88,7 @@ describe('EssaysController', () => {
       });
     });
 
-    it('should submit essay with video file', async () => {
+    it('should submit submission with video file', async () => {
       const mockVideoFile = {
         buffer: Buffer.from('fake video'),
         originalname: 'test.mp4',
@@ -96,17 +101,19 @@ describe('EssaysController', () => {
         audioUrl: 'https://example.com/audio.wav',
       };
 
-      mockEssaysService.submitEssay.mockResolvedValue(mockResultWithVideo);
+      mockSubmissionsService.submitSubmission.mockResolvedValue(
+        mockResultWithVideo,
+      );
 
-      const result = await controller.submitEssay(
+      const result = await controller.submitSubmission(
         mockRequest,
-        submitEssayDto,
+        submitSubmissionDto,
         mockVideoFile,
       );
 
-      expect(mockEssaysService.submitEssay).toHaveBeenCalledWith(
+      expect(mockSubmissionsService.submitSubmission).toHaveBeenCalledWith(
         1,
-        submitEssayDto,
+        submitSubmissionDto,
         mockVideoFile,
       );
       expect(result).toEqual({
@@ -119,23 +126,26 @@ describe('EssaysController', () => {
     it('should return authentication error when no user', async () => {
       const requestWithoutUser = {} as Request;
 
-      const result = await controller.submitEssay(
+      const result = await controller.submitSubmission(
         requestWithoutUser,
-        submitEssayDto,
+        submitSubmissionDto,
       );
 
       expect(result).toEqual({
         result: 'failed',
         message: '인증이 필요합니다.',
       });
-      expect(mockEssaysService.submitEssay).not.toHaveBeenCalled();
+      expect(mockSubmissionsService.submitSubmission).not.toHaveBeenCalled();
     });
 
     it('should handle service error', async () => {
       const error = new Error('에세이 제출 실패');
-      mockEssaysService.submitEssay.mockRejectedValue(error);
+      mockSubmissionsService.submitSubmission.mockRejectedValue(error);
 
-      const result = await controller.submitEssay(mockRequest, submitEssayDto);
+      const result = await controller.submitSubmission(
+        mockRequest,
+        submitSubmissionDto,
+      );
 
       expect(result).toEqual({
         result: 'failed',
@@ -144,9 +154,14 @@ describe('EssaysController', () => {
     });
 
     it('should handle unknown error', async () => {
-      mockEssaysService.submitEssay.mockRejectedValue('unknown error');
+      mockSubmissionsService.submitSubmission.mockRejectedValue(
+        'unknown error',
+      );
 
-      const result = await controller.submitEssay(mockRequest, submitEssayDto);
+      const result = await controller.submitSubmission(
+        mockRequest,
+        submitSubmissionDto,
+      );
 
       expect(result).toEqual({
         result: 'failed',
@@ -155,12 +170,12 @@ describe('EssaysController', () => {
     });
   });
 
-  describe('getEssay', () => {
+  describe('getSubmission', () => {
     const mockRequest = {
       user: { sub: 1 },
     } as Request & { user: { sub: number } };
 
-    const mockEssayResponse: EssayResponseDto = {
+    const mockSubmissionResponse: SubmissionResponseDto = {
       id: 1,
       title: '테스트 에세이',
       submitText: '테스트 내용',
@@ -173,61 +188,63 @@ describe('EssaysController', () => {
       updatedAt: new Date(),
     };
 
-    it('should get essay successfully', async () => {
-      mockEssaysService.getEssay.mockResolvedValue(mockEssayResponse);
+    it('should get submission successfully', async () => {
+      mockSubmissionsService.getSubmission.mockResolvedValue(
+        mockSubmissionResponse,
+      );
 
-      const result = await controller.getEssay(mockRequest, 1);
+      const result = await controller.getSubmission(mockRequest, 1);
 
-      expect(mockEssaysService.getEssay).toHaveBeenCalledWith(1, 1);
+      expect(mockSubmissionsService.getSubmission).toHaveBeenCalledWith(1, 1);
       expect(result).toEqual({
         result: 'ok',
-        message: '에세이 조회에 성공했습니다.',
-        data: mockEssayResponse,
+        message: '제출물 조회에 성공했습니다.',
+        data: mockSubmissionResponse,
       });
     });
 
     it('should return authentication error when no user', async () => {
       const requestWithoutUser = {} as Request;
 
-      const result = await controller.getEssay(requestWithoutUser, 1);
+      const result = await controller.getSubmission(requestWithoutUser, 1);
 
       expect(result).toEqual({
         result: 'failed',
         message: '인증이 필요합니다.',
       });
-      expect(mockEssaysService.getEssay).not.toHaveBeenCalled();
+      expect(mockSubmissionsService.getSubmission).not.toHaveBeenCalled();
     });
 
     it('should handle service error', async () => {
-      const error = new Error('에세이를 찾을 수 없습니다');
-      mockEssaysService.getEssay.mockRejectedValue(error);
+      const error = new Error('제출물을 찾을 수 없습니다');
+      mockSubmissionsService.getSubmission.mockRejectedValue(error);
 
-      const result = await controller.getEssay(mockRequest, 1);
+      const result = await controller.getSubmission(mockRequest, 1);
 
       expect(result).toEqual({
         result: 'failed',
-        message: '에세이를 찾을 수 없습니다',
+        message: '제출물을 찾을 수 없습니다',
       });
     });
 
     it('should handle unknown error', async () => {
-      mockEssaysService.getEssay.mockRejectedValue('unknown error');
+      mockSubmissionsService.getSubmission.mockRejectedValue('unknown error');
 
-      const result = await controller.getEssay(mockRequest, 1);
+      const result = await controller.getSubmission(mockRequest, 1);
 
       expect(result).toEqual({
         result: 'failed',
-        message: '에세이 조회에 실패했습니다.',
+        message: '제출물 조회에 실패했습니다.',
       });
     });
   });
 
-  describe('getStudentEssays', () => {
+  describe('getStudentSubmissions', () => {
     const mockRequest = {
       user: { sub: 1 },
     } as Request & { user: { sub: number } };
 
-    const mockEssaysList: EssayResponseDto[] = [
+    const mockSubmissionsList: SubmissionResponseDto[] = [
       {
         id: 1,
         title: '첫 번째 에세이',
@@ -249,27 +266,31 @@ describe('EssaysController', () => {
       },
     ];
 
-    it('should get student essays successfully', async () => {
-      mockEssaysService.getStudentEssays.mockResolvedValue(mockEssaysList);
+    it('should get student submissions successfully', async () => {
+      mockSubmissionsService.getStudentSubmissions.mockResolvedValue(
+        mockSubmissionsList,
+      );
 
-      const result = await controller.getStudentEssays(mockRequest);
+      const result = await controller.getStudentSubmissions(mockRequest);
 
-      expect(mockEssaysService.getStudentEssays).toHaveBeenCalledWith(1);
+      expect(mockSubmissionsService.getStudentSubmissions).toHaveBeenCalledWith(
+        1,
+      );
       expect(result).toEqual({
         result: 'ok',
-        message: '에세이 목록 조회에 성공했습니다.',
-        data: mockEssaysList,
+        message: '제출물 목록 조회에 성공했습니다.',
+        data: mockSubmissionsList,
       });
     });
 
-    it('should return empty array when no essays', async () => {
-      mockEssaysService.getStudentEssays.mockResolvedValue([]);
+    it('should return empty array when no submissions', async () => {
+      mockSubmissionsService.getStudentSubmissions.mockResolvedValue([]);
 
-      const result = await controller.getStudentEssays(mockRequest);
+      const result = await controller.getStudentSubmissions(mockRequest);
 
       expect(result).toEqual({
         result: 'ok',
-        message: '에세이 목록 조회에 성공했습니다.',
+        message: '제출물 목록 조회에 성공했습니다.',
         data: [],
       });
     });
@@ -277,20 +298,22 @@ describe('EssaysController', () => {
     it('should return authentication error when no user', async () => {
       const requestWithoutUser = {} as Request;
 
-      const result = await controller.getStudentEssays(requestWithoutUser);
+      const result = await controller.getStudentSubmissions(requestWithoutUser);
 
       expect(result).toEqual({
         result: 'failed',
         message: '인증이 필요합니다.',
       });
-      expect(mockEssaysService.getStudentEssays).not.toHaveBeenCalled();
+      expect(
+        mockSubmissionsService.getStudentSubmissions,
+      ).not.toHaveBeenCalled();
     });
 
     it('should handle service error', async () => {
       const error = new Error('목록 조회 실패');
-      mockEssaysService.getStudentEssays.mockRejectedValue(error);
+      mockSubmissionsService.getStudentSubmissions.mockRejectedValue(error);
 
-      const result = await controller.getStudentEssays(mockRequest);
+      const result = await controller.getStudentSubmissions(mockRequest);
 
       expect(result).toEqual({
         result: 'failed',
@@ -299,13 +322,15 @@ describe('EssaysController', () => {
     });
 
     it('should handle unknown error', async () => {
-      mockEssaysService.getStudentEssays.mockRejectedValue('unknown error');
+      mockSubmissionsService.getStudentSubmissions.mockRejectedValue(
+        'unknown error',
+      );
 
-      const result = await controller.getStudentEssays(mockRequest);
+      const result = await controller.getStudentSubmissions(mockRequest);
 
       expect(result).toEqual({
         result: 'failed',
-        message: '에세이 목록 조회에 실패했습니다.',
+        message: '제출물 목록 조회에 실패했습니다.',
       });
     });
   });

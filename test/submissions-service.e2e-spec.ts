@@ -3,8 +3,11 @@ import { INestApplication } from '@nestjs/common';
 import { Repository, DataSource } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { EssaysService } from '../src/essays/essays.service';
-import { Essay, EvaluationStatus } from '../src/essays/entities/essay.entity';
+import { SubmissionsService } from '../src/essays/submissions.service';
+import {
+  Submission,
+  EvaluationStatus,
+} from '../src/essays/entities/submission.entity';
 import { ComponentType } from '../src/essays/enums/component-type.enum';
 import {
   EvaluationLog,
@@ -17,13 +20,13 @@ import { AzureStorageService } from '../src/essays/services/azure-storage.servic
 import { OpenAIService } from '../src/essays/services/openai.service';
 import { TextHighlightingService } from '../src/essays/services/text-highlighting.service';
 import { NotificationService } from '../src/essays/services/notification.service';
-import { SubmitEssayDto } from '../src/essays/dto/submit-essay.dto';
+import { SubmitSubmissionDto } from '../src/essays/dto/submit-submission.dto';
 import { AppModule } from '../src/app.module';
 
-describe('EssaysService (e2e)', () => {
+describe('SubmissionsService (e2e)', () => {
   let app: INestApplication;
-  let service: EssaysService;
-  let essayRepository: Repository<Essay>;
+  let service: SubmissionsService;
+  let submissionRepository: Repository<Submission>;
   let evaluationLogRepository: Repository<EvaluationLog>;
   let studentRepository: Repository<Student>;
   let videoProcessingService: VideoProcessingService;
@@ -41,8 +44,10 @@ describe('EssaysService (e2e)', () => {
     app = module.createNestApplication();
     await app.init();
 
-    service = module.get<EssaysService>(EssaysService);
-    essayRepository = module.get<Repository<Essay>>(getRepositoryToken(Essay));
+    service = module.get<SubmissionsService>(SubmissionsService);
+    submissionRepository = module.get<Repository<Submission>>(
+      getRepositoryToken(Submission),
+    );
     evaluationLogRepository = module.get<Repository<EvaluationLog>>(
       getRepositoryToken(EvaluationLog),
     );
@@ -73,10 +78,10 @@ describe('EssaysService (e2e)', () => {
     const dataSource = app.get(DataSource);
     await dataSource.transaction(async (manager) => {
       await manager.query('DELETE FROM evaluation_logs');
-      await manager.query('DELETE FROM essays');
+      await manager.query('DELETE FROM submissions');
       await manager.query('DELETE FROM students');
       await manager.query('ALTER SEQUENCE students_id_seq RESTART WITH 1');
-      await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
+      await manager.query('ALTER SEQUENCE submissions_id_seq RESTART WITH 1');
       await manager.query(
         'ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1',
       );
@@ -89,8 +94,8 @@ describe('EssaysService (e2e)', () => {
     const dataSource = app.get(DataSource);
     await dataSource.transaction(async (manager) => {
       await manager.query('DELETE FROM evaluation_logs');
-      await manager.query('DELETE FROM essays');
-      await manager.query('ALTER SEQUENCE essays_id_seq RESTART WITH 1');
+      await manager.query('DELETE FROM submissions');
+      await manager.query('ALTER SEQUENCE submissions_id_seq RESTART WITH 1');
       await manager.query(
         'ALTER SEQUENCE evaluation_logs_id_seq RESTART WITH 1',
       );
@@ -101,11 +106,11 @@ describe('EssaysService (e2e)', () => {
     (service as any).processingStudents.clear();
   });
 
-  describe('submitEssay', () => {
-    const mockSubmitEssayDto: SubmitEssayDto = {
-      title: '테스트 에세이',
+  describe('submitSubmission', () => {
+    const mockSubmitSubmissionDto: SubmitSubmissionDto = {
+      title: '테스트 제출물',
       submitText:
-        '이것은 테스트 에세이 내용입니다. 평가를 위한 충분한 텍스트가 필요합니다.',
+        '이것은 테스트 제출물 내용입니다. 평가를 위한 충분한 텍스트가 필요합니다.',
       componentType: ComponentType.WRITING,
     };
 
@@ -125,7 +130,7 @@ describe('EssaysService (e2e)', () => {
       }
 
       // Mock services
-      jest.spyOn(openAIService, 'evaluateEssay').mockResolvedValue({
+      jest.spyOn(openAIService, 'evaluateSubmission').mockResolvedValue({
         score: 85,
         feedback: '좋은 에세이입니다. 구조가 잘 잡혀있고 내용이 충실합니다.',
         highlights: ['좋은', '구조', '충실'],
@@ -166,22 +171,22 @@ describe('EssaysService (e2e)', () => {
       jest.restoreAllMocks();
     });
 
-    it('should submit essay successfully without video', async () => {
-      const result = await service.submitEssay(
+    it('should submit submission successfully without video', async () => {
+      const result = await service.submitSubmission(
         testStudent.id,
-        mockSubmitEssayDto,
+        mockSubmitSubmissionDto,
       );
 
       expect(result).toMatchObject({
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        essayId: expect.any(Number),
+        submissionId: expect.any(Number),
         studentId: testStudent.id,
         status: EvaluationStatus.COMPLETED,
         score: 85,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         feedback: expect.stringContaining('좋은 에세이'),
         highlights: ['좋은', '구조', '충실'],
-        submitText: mockSubmitEssayDto.submitText,
+        submitText: mockSubmitSubmissionDto.submitText,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         highlightSubmitText: expect.stringContaining('<mark>'),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -189,16 +194,16 @@ describe('EssaysService (e2e)', () => {
       });
 
       // 데이터베이스에 저장되었는지 확인
-      const savedEssay = await essayRepository.findOne({
-        where: { id: result.essayId },
+      const savedSubmission = await submissionRepository.findOne({
+        where: { id: result.submissionId },
       });
-      expect(savedEssay).toBeTruthy();
-      expect(savedEssay?.status).toBe(EvaluationStatus.COMPLETED);
-      expect(savedEssay?.score).toBe(85);
+      expect(savedSubmission).toBeTruthy();
+      expect(savedSubmission?.status).toBe(EvaluationStatus.COMPLETED);
+      expect(savedSubmission?.score).toBe(85);
 
       // 평가 로그가 생성되었는지 확인
       const logs = await evaluationLogRepository.find({
-        where: { essayId: result.essayId },
+        where: { submissionId: result.submissionId },
       });
       expect(logs.length).toBeGreaterThan(0);
       expect(logs.some((log) => log.type === LogType.AI_EVALUATION)).toBe(true);
@@ -222,15 +227,15 @@ describe('EssaysService (e2e)', () => {
         stream: null as any,
       };
 
-      const result = await service.submitEssay(
+      const result = await service.submitSubmission(
         testStudent.id,
-        mockSubmitEssayDto,
+        mockSubmitSubmissionDto,
         mockVideoFile,
       );
 
       expect(result).toMatchObject({
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        essayId: expect.any(Number),
+        submissionId: expect.any(Number),
         studentId: testStudent.id,
         status: EvaluationStatus.COMPLETED,
         videoUrl: 'https://example.com/video.mp4',
@@ -251,7 +256,7 @@ describe('EssaysService (e2e)', () => {
 
       // 비디오 관련 로그가 생성되었는지 확인
       const logs = await evaluationLogRepository.find({
-        where: { essayId: result.essayId },
+        where: { submissionId: result.submissionId },
       });
       expect(logs.some((log) => log.type === LogType.VIDEO_PROCESSING)).toBe(
         true,
@@ -261,12 +266,12 @@ describe('EssaysService (e2e)', () => {
 
     it('should prevent duplicate submission for same componentType', async () => {
       // 첫 번째 제출
-      await service.submitEssay(testStudent.id, mockSubmitEssayDto);
+      await service.submitSubmission(testStudent.id, mockSubmitSubmissionDto);
 
       // 같은 componentType으로 두 번째 제출 시도
       await expect(
-        service.submitEssay(testStudent.id, {
-          ...mockSubmitEssayDto,
+        service.submitSubmission(testStudent.id, {
+          ...mockSubmitSubmissionDto,
           title: '두 번째 에세이',
         }),
       ).rejects.toThrow(ConflictException);
@@ -278,9 +283,12 @@ describe('EssaysService (e2e)', () => {
       (service as any).processingStudents.clear();
 
       // 두 개의 동시 제출 시도
-      const promise1 = service.submitEssay(testStudent.id, mockSubmitEssayDto);
-      const promise2 = service.submitEssay(testStudent.id, {
-        ...mockSubmitEssayDto,
+      const promise1 = service.submitSubmission(
+        testStudent.id,
+        mockSubmitSubmissionDto,
+      );
+      const promise2 = service.submitSubmission(testStudent.id, {
+        ...mockSubmitSubmissionDto,
         componentType: ComponentType.SPEAKING,
       });
 
@@ -307,24 +315,24 @@ describe('EssaysService (e2e)', () => {
       (service as any).processingStudents.clear();
 
       jest
-        .spyOn(openAIService, 'evaluateEssay')
+        .spyOn(openAIService, 'evaluateSubmission')
         .mockRejectedValue(new Error('OpenAI API Error'));
 
       await expect(
-        service.submitEssay(testStudent.id, mockSubmitEssayDto),
+        service.submitSubmission(testStudent.id, mockSubmitSubmissionDto),
       ).rejects.toThrow('OpenAI API Error');
 
-      // 실패한 에세이가 FAILED 상태로 저장되는지 확인
-      const essays = await essayRepository.find({
+      // 실패한 제출물이 FAILED 상태로 저장되는지 확인
+      const submissions = await submissionRepository.find({
         where: { studentId: testStudent.id },
       });
-      expect(essays.length).toBe(1);
-      expect(essays[0]?.status).toBe(EvaluationStatus.FAILED);
-      expect(essays[0]?.errorMessage).toBe('OpenAI API Error');
+      expect(submissions.length).toBe(1);
+      expect(submissions[0]?.status).toBe(EvaluationStatus.FAILED);
+      expect(submissions[0]?.errorMessage).toBe('OpenAI API Error');
 
       // 실패 로그가 생성되었는지 확인
       const logs = await evaluationLogRepository.find({
-        where: { essayId: essays[0]?.id, status: LogStatus.FAILED },
+        where: { submissionId: submissions[0]?.id, status: LogStatus.FAILED },
       });
       expect(logs.length).toBeGreaterThan(0);
     });
@@ -353,7 +361,11 @@ describe('EssaysService (e2e)', () => {
       };
 
       await expect(
-        service.submitEssay(testStudent.id, mockSubmitEssayDto, mockVideoFile),
+        service.submitSubmission(
+          testStudent.id,
+          mockSubmitSubmissionDto,
+          mockVideoFile,
+        ),
       ).rejects.toThrow('Video processing failed');
 
       // 알림 서비스가 호출되었는지 확인
@@ -385,7 +397,11 @@ describe('EssaysService (e2e)', () => {
       };
 
       await expect(
-        service.submitEssay(testStudent.id, mockSubmitEssayDto, mockVideoFile),
+        service.submitSubmission(
+          testStudent.id,
+          mockSubmitSubmissionDto,
+          mockVideoFile,
+        ),
       ).rejects.toThrow('Azure storage upload failed');
 
       // 임시 파일 정리가 호출되었는지 확인
@@ -394,8 +410,8 @@ describe('EssaysService (e2e)', () => {
     });
   });
 
-  describe('getEssay', () => {
-    let testEssay: Essay;
+  describe('getSubmission', () => {
+    let testSubmission: Submission;
 
     beforeEach(async () => {
       // testStudent가 존재하는지 확인하고 없으면 새로 생성
@@ -412,9 +428,9 @@ describe('EssaysService (e2e)', () => {
         testStudent = await studentRepository.save(student);
       }
 
-      const essay = essayRepository.create({
-        title: '테스트 에세이',
-        submitText: '테스트 에세이 내용',
+      const submission = submissionRepository.create({
+        title: '테스트 제출물',
+        submitText: '테스트 제출물 내용',
         componentType: ComponentType.WRITING,
         studentId: testStudent.id,
         status: EvaluationStatus.COMPLETED,
@@ -423,14 +439,17 @@ describe('EssaysService (e2e)', () => {
         highlights: ['훌륭한', '에세이'],
         highlightSubmitText: '<mark>훌륭한</mark> <mark>에세이</mark> 내용',
       });
-      testEssay = await essayRepository.save(essay);
+      testSubmission = await submissionRepository.save(submission);
     });
 
-    it('should get essay successfully', async () => {
-      const result = await service.getEssay(testEssay.id, testStudent.id);
+    it('should get submission successfully', async () => {
+      const result = await service.getSubmission(
+        testSubmission.id,
+        testStudent.id,
+      );
 
       expect(result).toMatchObject({
-        id: testEssay.id,
+        id: testSubmission.id,
         title: '테스트 에세이',
         submitText: '테스트 에세이 내용',
         componentType: ComponentType.WRITING,
@@ -442,11 +461,11 @@ describe('EssaysService (e2e)', () => {
       });
     });
 
-    it('should throw NotFoundException for non-existent essay', async () => {
+    it('should throw NotFoundException for non-existent submission', async () => {
       const nonExistentId = 99999;
 
       await expect(
-        service.getEssay(nonExistentId, testStudent.id),
+        service.getSubmission(nonExistentId, testStudent.id),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -459,9 +478,9 @@ describe('EssaysService (e2e)', () => {
       });
       const savedOtherStudent = await studentRepository.save(otherStudent);
 
-      // 다른 학생 ID로 에세이 조회 시도
+      // 다른 학생 ID로 제출물 조회 시도
       await expect(
-        service.getEssay(testEssay.id, savedOtherStudent.id),
+        service.getSubmission(testSubmission.id, savedOtherStudent.id),
       ).rejects.toThrow(NotFoundException);
 
       // 테스트 후 정리
@@ -469,7 +488,7 @@ describe('EssaysService (e2e)', () => {
     });
   });
 
-  describe('getStudentEssays', () => {
+  describe('getStudentSubmissions', () => {
     beforeEach(async () => {
       // testStudent가 존재하는지 확인하고 없으면 새로 생성
       const studentExists = await studentRepository.findOne({
@@ -485,8 +504,8 @@ describe('EssaysService (e2e)', () => {
         testStudent = await studentRepository.save(student);
       }
 
-      // 여러 에세이 생성
-      const essays = [
+      // 여러 제출물 생성
+      const submissions = [
         {
           title: '첫 번째 에세이',
           submitText: '첫 번째 에세이 내용',
@@ -510,17 +529,17 @@ describe('EssaysService (e2e)', () => {
         },
       ];
 
-      for (const essayData of essays) {
-        const essay = essayRepository.create({
-          ...essayData,
+      for (const submissionData of submissions) {
+        const submission = submissionRepository.create({
+          ...submissionData,
           studentId: testStudent.id,
         });
-        await essayRepository.save(essay);
+        await submissionRepository.save(submission);
       }
     });
 
-    it('should get all student essays ordered by creation date desc', async () => {
-      const result = await service.getStudentEssays(testStudent.id);
+    it('should get all student submissions ordered by creation date desc', async () => {
+      const result = await service.getStudentSubmissions(testStudent.id);
 
       expect(result).toHaveLength(3);
       expect(result[0]?.title).toBe('세 번째 에세이'); // 가장 최근 생성
@@ -528,27 +547,27 @@ describe('EssaysService (e2e)', () => {
       expect(result[2]?.title).toBe('첫 번째 에세이');
 
       // 결과 구조 확인
-      result.forEach((essay) => {
-        expect(essay).toHaveProperty('id');
-        expect(essay).toHaveProperty('title');
-        expect(essay).toHaveProperty('submitText');
-        expect(essay).toHaveProperty('componentType');
-        expect(essay).toHaveProperty('status');
-        expect(essay).toHaveProperty('createdAt');
-        expect(essay).toHaveProperty('updatedAt');
+      result.forEach((submission) => {
+        expect(submission).toHaveProperty('id');
+        expect(submission).toHaveProperty('title');
+        expect(submission).toHaveProperty('submitText');
+        expect(submission).toHaveProperty('componentType');
+        expect(submission).toHaveProperty('status');
+        expect(submission).toHaveProperty('createdAt');
+        expect(submission).toHaveProperty('updatedAt');
       });
     });
 
-    it('should return empty array for student with no essays', async () => {
-      // 모든 에세이 삭제
-      await essayRepository.delete({ studentId: testStudent.id });
+    it('should return empty array for student with no submissions', async () => {
+      // 모든 제출물 삭제
+      await submissionRepository.delete({ studentId: testStudent.id });
 
-      const result = await service.getStudentEssays(testStudent.id);
+      const result = await service.getStudentSubmissions(testStudent.id);
 
       expect(result).toEqual([]);
     });
 
-    it('should not return other students essays', async () => {
+    it('should not return other students submissions', async () => {
       // 다른 학생과 에세이 생성
       const otherStudent = studentRepository.create({
         name: '다른 학생',
@@ -557,21 +576,21 @@ describe('EssaysService (e2e)', () => {
       });
       const savedOtherStudent = await studentRepository.save(otherStudent);
 
-      const otherEssay = essayRepository.create({
-        title: '다른 학생의 에세이',
-        submitText: '다른 학생의 에세이 내용',
+      const otherSubmission = submissionRepository.create({
+        title: '다른 학생의 제출물',
+        submitText: '다른 학생의 제출물 내용',
         componentType: ComponentType.WRITING,
         studentId: savedOtherStudent.id,
         status: EvaluationStatus.COMPLETED,
       });
-      await essayRepository.save(otherEssay);
+      await submissionRepository.save(otherSubmission);
 
-      const result = await service.getStudentEssays(testStudent.id);
+      const result = await service.getStudentSubmissions(testStudent.id);
 
       // 원래 학생의 에세이만 반환되어야 함
       expect(result).toHaveLength(3);
-      result.forEach((essay) => {
-        expect(essay.title).not.toBe('다른 학생의 에세이');
+      result.forEach((submission) => {
+        expect(submission.title).not.toBe('다른 학생의 에세이');
       });
 
       // 테스트 후 정리는 afterAll에서 처리됨
@@ -579,7 +598,7 @@ describe('EssaysService (e2e)', () => {
   });
 
   describe('logEvaluation', () => {
-    let testEssay: Essay;
+    let testSubmission: Submission;
 
     beforeEach(async () => {
       // testStudent가 존재하는지 확인하고 없으면 새로 생성
@@ -596,18 +615,18 @@ describe('EssaysService (e2e)', () => {
         testStudent = await studentRepository.save(student);
       }
 
-      const essay = essayRepository.create({
+      const submission = submissionRepository.create({
         title: '로그 테스트 에세이',
         submitText: '로그 테스트 내용',
         componentType: ComponentType.WRITING,
         studentId: testStudent.id,
         status: EvaluationStatus.PENDING,
       });
-      testEssay = await essayRepository.save(essay);
+      testSubmission = await submissionRepository.save(submission);
 
-      // testEssay가 제대로 저장되었는지 확인
-      expect(testEssay).toBeTruthy();
-      expect(testEssay.id).toBeDefined();
+      // testSubmission가 제대로 저장되었는지 확인
+      expect(testSubmission).toBeTruthy();
+      expect(testSubmission.id).toBeDefined();
     });
 
     it('should create evaluation log successfully', async () => {
@@ -620,19 +639,19 @@ describe('EssaysService (e2e)', () => {
       };
 
       await service.logEvaluation(
-        testEssay.id,
+        testSubmission.id,
         LogType.AI_EVALUATION,
         LogStatus.SUCCESS,
         logData,
       );
 
       const logs = await evaluationLogRepository.find({
-        where: { essayId: testEssay.id },
+        where: { submissionId: testSubmission.id },
       });
 
       expect(logs).toHaveLength(1);
       expect(logs[0]).toMatchObject({
-        essayId: testEssay.id,
+        submissionId: testSubmission.id,
         type: LogType.AI_EVALUATION,
         status: LogStatus.SUCCESS,
         requestUri: '/api/test',
@@ -651,14 +670,14 @@ describe('EssaysService (e2e)', () => {
       };
 
       await service.logEvaluation(
-        testEssay.id,
+        testSubmission.id,
         LogType.VIDEO_PROCESSING,
         LogStatus.FAILED,
         logData,
       );
 
       const logs = await evaluationLogRepository.find({
-        where: { essayId: testEssay.id, status: LogStatus.FAILED },
+        where: { submissionId: testSubmission.id, status: LogStatus.FAILED },
       });
 
       expect(logs).toHaveLength(1);
@@ -688,7 +707,7 @@ describe('EssaysService (e2e)', () => {
       }
 
       // 모든 서비스가 정상 작동하도록 Mock 설정
-      jest.spyOn(openAIService, 'evaluateEssay').mockResolvedValue({
+      jest.spyOn(openAIService, 'evaluateSubmission').mockResolvedValue({
         score: 88,
         feedback: '통합 테스트를 위한 피드백입니다.',
         highlights: ['통합', '테스트'],
@@ -703,33 +722,33 @@ describe('EssaysService (e2e)', () => {
       jest.restoreAllMocks();
     });
 
-    it('should complete full essay submission workflow', async () => {
-      const dto: SubmitEssayDto = {
+    it('should complete full submission workflow', async () => {
+      const dto: SubmitSubmissionDto = {
         title: '통합 테스트 에세이',
         submitText: '통합 테스트 내용입니다.',
         componentType: ComponentType.WRITING,
       };
 
       // 1. 에세이 제출
-      const submitResult = await service.submitEssay(testStudent.id, dto);
+      const submitResult = await service.submitSubmission(testStudent.id, dto);
       expect(submitResult.status).toBe(EvaluationStatus.COMPLETED);
 
       // 2. 에세이 조회
-      const getResult = await service.getEssay(
-        submitResult.essayId,
+      const getResult = await service.getSubmission(
+        submitResult.submissionId,
         testStudent.id,
       );
-      expect(getResult.id).toBe(submitResult.essayId);
+      expect(getResult.id).toBe(submitResult.submissionId);
       expect(getResult.title).toBe(dto.title);
 
-      // 3. 학생 에세이 목록 조회
-      const listResult = await service.getStudentEssays(testStudent.id);
+      // 3. 학생 제출물 목록 조회
+      const listResult = await service.getStudentSubmissions(testStudent.id);
       expect(listResult).toHaveLength(1);
-      expect(listResult[0]?.id).toBe(submitResult.essayId);
+      expect(listResult[0]?.id).toBe(submitResult.submissionId);
 
       // 4. 평가 로그 확인
       const logs = await evaluationLogRepository.find({
-        where: { essayId: submitResult.essayId },
+        where: { submissionId: submitResult.submissionId },
       });
       expect(logs.length).toBeGreaterThan(0);
       expect(logs.some((log) => log.status === LogStatus.SUCCESS)).toBe(true);

@@ -42,7 +42,7 @@ export class OpenAIService {
     }
   }
 
-  async evaluateEssay(
+  async evaluateSubmission(
     title: string,
     submitText: string,
     componentType: string,

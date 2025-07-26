@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Revision, RevisionStatus } from '../entities/revision.entity';
-import { Essay, EvaluationStatus } from '../entities/essay.entity';
+import { Submission, EvaluationStatus } from '../entities/submission.entity';
 import { CreateRevisionDto, RevisionResponseDto } from '../dto/revision.dto';
 import {
   EvaluationLog,
@@ -26,8 +26,8 @@ export class RevisionService {
   constructor(
     @InjectRepository(Revision)
     private revisionRepository: Repository<Revision>,
-    @InjectRepository(Essay)
-    private essayRepository: Repository<Essay>,
+    @InjectRepository(Submission)
+    private submissionRepository: Repository<Submission>,
     @InjectRepository(EvaluationLog)
     private evaluationLogRepository: Repository<EvaluationLog>,
     private openAIService: OpenAIService,
@@ -41,26 +41,26 @@ export class RevisionService {
   ): Promise<RevisionResponseDto> {
     const { submissionId } = createRevisionDto;
 
-    // submissionId를 숫자로 변환 (기존 에세이 ID와 매핑)
-    const essayId = parseInt(submissionId, 10);
-    if (isNaN(essayId)) {
+    // submissionId를 숫자로 변환 (기존 제출 ID와 매핑)
+    const parsedSubmissionId = parseInt(submissionId, 10);
+    if (isNaN(parsedSubmissionId)) {
       throw new NotFoundException('유효하지 않은 submission ID입니다.');
     }
 
-    // 에세이 존재 확인
-    const essay = await this.essayRepository.findOne({
-      where: { id: essayId },
+    // 제출물 존재 확인
+    const submission = await this.submissionRepository.findOne({
+      where: { id: parsedSubmissionId },
       relations: ['student'],
     });
 
-    if (!essay) {
-      throw new NotFoundException('에세이를 찾을 수 없습니다.');
+    if (!submission) {
+      throw new NotFoundException('제출물을 찾을 수 없습니다.');
     }
 
     // 이미 진행 중인 재평가가 있는지 확인
     const existingRevision = await this.revisionRepository.findOne({
       where: {
-        essayId,
+        submissionId: parsedSubmissionId,
         status: RevisionStatus.IN_PROGRESS,
       },
     });
@@ -71,9 +71,9 @@ export class RevisionService {
 
     // 재평가 생성
     const revision = this.revisionRepository.create({
-      essayId,
-      studentId: essay.studentId,
-      componentType: essay.componentType,
+      submissionId: parsedSubmissionId,
+      studentId: submission.studentId,
+      componentType: submission.componentType,
       status: RevisionStatus.PENDING,
     });
 
@@ -103,7 +103,7 @@ export class RevisionService {
     const order = sortOrder?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     const [revisions, total] = await this.revisionRepository.findAndCount({
-      relations: ['essay', 'essay.student'],
+      relations: ['submission', 'submission.student'],
       order: { [sortField]: order },
       skip: (page - 1) * size,
       take: size,
@@ -118,7 +118,7 @@ export class RevisionService {
   async getRevisionById(id: number): Promise<RevisionResponseDto> {
     const revision = await this.revisionRepository.findOne({
       where: { id },
-      relations: ['essay', 'essay.student'],
+      relations: ['submission', 'submission.student'],
     });
 
     if (!revision) {
@@ -135,11 +135,11 @@ export class RevisionService {
     try {
       const revision = await this.revisionRepository.findOne({
         where: { id: revisionId },
-        relations: ['essay'],
+        relations: ['submission'],
       });
 
-      if (!revision || !revision.essay) {
-        throw new Error('Revision or essay not found');
+      if (!revision || !revision.submission) {
+        throw new Error('Revision or submission not found');
       }
 
       // 상태를 처리 중으로 변경
@@ -151,14 +151,14 @@ export class RevisionService {
 
       // AI 평가 시작 로그
       await this.logEvaluation(
-        revision.essayId,
+        revision.submissionId,
         LogType.AI_EVALUATION,
         LogStatus.STARTED,
         {
           traceId,
           requestData: {
             revisionId,
-            title: revision.essay.title,
+            title: revision.submission.title,
             componentType: revision.componentType,
           },
         },
@@ -166,15 +166,15 @@ export class RevisionService {
 
       // AI 평가 수행
       const aiStartTime = Date.now();
-      const aiResult = await this.openAIService.evaluateEssay(
-        revision.essay.title,
-        revision.essay.submitText,
+      const aiResult = await this.openAIService.evaluateSubmission(
+        revision.submission.title,
+        revision.submission.submitText,
         revision.componentType,
       );
 
       // AI 평가 성공 로그
       await this.logEvaluation(
-        revision.essayId,
+        revision.submissionId,
         LogType.AI_EVALUATION,
         LogStatus.SUCCESS,
         {
@@ -186,7 +186,7 @@ export class RevisionService {
 
       // 텍스트 하이라이팅 시작 로그
       await this.logEvaluation(
-        revision.essayId,
+        revision.submissionId,
         LogType.TEXT_HIGHLIGHTING,
         LogStatus.STARTED,
         {
@@ -200,13 +200,13 @@ export class RevisionService {
       // 텍스트 하이라이팅
       const highlightStartTime = Date.now();
       const highlightSubmitText = this.textHighlightingService.highlightText(
-        revision.essay.submitText,
+        revision.submission.submitText,
         aiResult.highlights,
       );
 
       // 텍스트 하이라이팅 성공 로그
       await this.logEvaluation(
-        revision.essayId,
+        revision.submissionId,
         LogType.TEXT_HIGHLIGHTING,
         LogStatus.SUCCESS,
         {
@@ -230,7 +230,7 @@ export class RevisionService {
       });
 
       // 원본 에세이도 업데이트
-      await this.essayRepository.update(revision.essayId, {
+      await this.submissionRepository.update(revision.submissionId, {
         status: EvaluationStatus.COMPLETED,
         score: aiResult.score,
         feedback: aiResult.feedback,
@@ -239,7 +239,10 @@ export class RevisionService {
       });
 
       // 캐시 무효화
-      await this.invalidateRelatedCaches(revision.essayId, revision.studentId);
+      await this.invalidateRelatedCaches(
+        revision.submissionId,
+        revision.studentId,
+      );
 
       this.logger.log(
         `Revision ${revisionId} completed successfully with score: ${aiResult.score}`,
@@ -256,7 +259,7 @@ export class RevisionService {
 
       if (revision) {
         await this.logEvaluation(
-          revision.essayId,
+          revision.submissionId,
           LogType.AI_EVALUATION,
           LogStatus.FAILED,
           {
@@ -280,7 +283,7 @@ export class RevisionService {
       // 실패 알림 발송 (이미 조회한 revision 재사용)
       if (revision) {
         await this.notificationService.notifyEvaluationFailure(
-          revision.essayId,
+          revision.submissionId,
           revision.studentId,
           errorMessage,
           traceId,
@@ -290,20 +293,21 @@ export class RevisionService {
   }
 
   private async invalidateRelatedCaches(
-    essayId: number,
+    submissionId: number,
     studentId: number,
   ): Promise<void> {
-    const essayKey = this.cacheService.getEssayKey(essayId);
-    const studentEssaysKey = this.cacheService.getStudentEssaysKey(studentId);
+    const submissionKey = this.cacheService.getSubmissionKey(submissionId);
+    const studentSubmissionsKey =
+      this.cacheService.getStudentSubmissionsKey(studentId);
 
     await Promise.all([
-      this.cacheService.del(essayKey),
-      this.cacheService.del(studentEssaysKey),
+      this.cacheService.del(submissionKey),
+      this.cacheService.del(studentSubmissionsKey),
     ]);
   }
 
   private async logEvaluation(
-    essayId: number,
+    submissionId: number,
     type: LogType,
     status: LogStatus,
     data: {
@@ -317,19 +321,19 @@ export class RevisionService {
   ): Promise<void> {
     try {
       // 에세이가 존재하는지 확인
-      const essayExists = await this.essayRepository.findOne({
-        where: { id: essayId },
+      const submissionExists = await this.submissionRepository.findOne({
+        where: { id: submissionId },
       });
 
-      if (!essayExists) {
+      if (!submissionExists) {
         this.logger.warn(
-          `Cannot log evaluation for non-existent essay ID: ${essayId}`,
+          `Cannot log evaluation for non-existent submission ID: ${submissionId}`,
         );
         return;
       }
 
       const log = new EvaluationLog();
-      log.essayId = essayId;
+      log.submissionId = submissionId;
       log.type = type;
       log.status = status;
       if (data.requestUri) {
@@ -359,7 +363,7 @@ export class RevisionService {
       await this.evaluationLogRepository.save(log);
     } catch (error) {
       this.logger.error(
-        `Failed to log evaluation for essay ${essayId}:`,
+        `Failed to log evaluation for submission ${submissionId}:`,
         error,
       );
     }
@@ -368,7 +372,7 @@ export class RevisionService {
   private mapToResponseDto(revision: Revision): RevisionResponseDto {
     return {
       id: revision.id,
-      essayId: revision.essayId,
+      submissionId: revision.submissionId,
       studentId: revision.studentId,
       componentType: revision.componentType,
       revisionReason: revision.revisionReason ?? undefined,
