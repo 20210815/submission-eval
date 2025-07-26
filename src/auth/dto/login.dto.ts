@@ -2,7 +2,7 @@ import { IsEmail, IsString, MinLength, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginDto {
-  @ApiProperty({ example: 'john@example.com', description: 'Student email' })
+  @ApiProperty({ example: 'john@example.com', description: '학생 이메일' })
   @IsEmail({}, { message: '유효한 이메일 주소를 입력해주세요.' })
   @IsNotEmpty({ message: '이메일은 필수입니다.' })
   email: string;
@@ -10,7 +10,7 @@ export class LoginDto {
   @ApiProperty({
     example: 'mypassword123',
     description:
-      'Student password (minimum 8 characters with complexity requirements)',
+      '학생 비밀번호 (최소 8자 이상, 복잡도 요구사항 포함)',
     minLength: 8,
   })
   @IsString()

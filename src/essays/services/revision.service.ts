@@ -89,15 +89,41 @@ export class RevisionService {
 
     const savedRevision = await this.revisionRepository.save(revision);
 
-    // 비동기로 재평가 시작
-    this.processRevision(savedRevision.id).catch((error) => {
-      this.logger.error(
-        `Failed to process revision ${savedRevision.id}:`,
-        error,
-      );
+    // 동기적으로 재평가 처리 및 완료된 결과 반환 (30초 타임아웃)
+    try {
+      await Promise.race([
+        this.processRevision(savedRevision.id),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('재평가 처리 시간이 초과되었습니다.')), 30000)
+        ),
+      ]);
+    } catch (error) {
+      // 타임아웃이나 처리 실패 시 실패 상태로 업데이트
+      await this.revisionRepository.update(savedRevision.id, {
+        status: RevisionStatus.FAILED,
+        errorMessage: error instanceof Error ? error.message : '재평가 처리 중 오류가 발생했습니다.',
+      });
+      
+      throw new BadRequestException({
+        result: 'failed',
+        message: error instanceof Error ? error.message : '재평가 처리 중 오류가 발생했습니다.',
+      });
+    }
+
+    // 처리 완료된 재평가 다시 조회
+    const completedRevision = await this.revisionRepository.findOne({
+      where: { id: savedRevision.id },
+      relations: ['submission', 'submission.student'],
     });
 
-    return this.mapToResponseDto(savedRevision);
+    if (!completedRevision) {
+      throw new NotFoundException({
+        result: 'failed',
+        message: '재평가 처리 중 오류가 발생했습니다.',
+      });
+    }
+
+    return this.mapToResponseDto(completedRevision);
   }
 
   async getRevisions(
@@ -394,7 +420,6 @@ export class RevisionService {
       feedback: revision.feedback ?? undefined,
       highlights: revision.highlights ?? undefined,
       highlightSubmitText: revision.highlightSubmitText ?? undefined,
-      errorMessage: revision.errorMessage ?? undefined,
       apiLatency: revision.apiLatency ?? undefined,
       traceId: revision.traceId ?? undefined,
     };
