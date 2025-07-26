@@ -29,7 +29,7 @@ import { StatsMonthly } from '../entities/stats-monthly.entity';
 import {
   API_RESPONSE_SCHEMAS,
   STATS_VALIDATION_ERROR_EXAMPLES,
-} from 'src/common/constants/api-response-schemas';
+} from '../../common/constants/api-response-schemas';
 
 @ApiTags('Statistics')
 @ApiBearerAuth()

@@ -194,7 +194,7 @@ describe('RevisionService', () => {
         BadRequestException,
       );
       await expect(service.createRevision(invalidDto)).rejects.toThrow(
-        '유효하지 않은 submission ID입니다.',
+        'Submission ID는 필수 입력 항목입니다.',
       );
     });
 
