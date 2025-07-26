@@ -232,7 +232,11 @@ describe('NotificationService', () => {
 
       mockedAxios.post.mockResolvedValue({ status: 200 });
 
-      await service.notifyEvaluationFailure(submissionId, studentId, errorMessage);
+      await service.notifyEvaluationFailure(
+        submissionId,
+        studentId,
+        errorMessage,
+      );
 
       expect(loggerLogSpy).toHaveBeenCalledWith(
         '🔔 NotificationService.notifyEvaluationFailure called:',

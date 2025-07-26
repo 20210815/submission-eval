@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -41,10 +42,21 @@ export class RevisionService {
   ): Promise<RevisionResponseDto> {
     const { submissionId } = createRevisionDto;
 
+    // 필수 필드 검증
+    if (!submissionId) {
+      throw new BadRequestException({
+        result: 'failed',
+        message: 'submissionId는 필수입니다.',
+      });
+    }
+
     // submissionId를 숫자로 변환 (기존 제출 ID와 매핑)
     const parsedSubmissionId = parseInt(submissionId, 10);
     if (isNaN(parsedSubmissionId)) {
-      throw new NotFoundException('유효하지 않은 submission ID입니다.');
+      throw new BadRequestException({
+        result: 'failed',
+        message: '유효하지 않은 submission ID입니다.',
+      });
     }
 
     // 제출물 존재 확인
@@ -54,7 +66,10 @@ export class RevisionService {
     });
 
     if (!submission) {
-      throw new NotFoundException('제출물을 찾을 수 없습니다.');
+      throw new NotFoundException({
+        result: 'failed',
+        message: '존재하지 않는 제출물입니다.',
+      });
     }
 
     // 이미 진행 중인 재평가가 있는지 확인
@@ -66,7 +81,10 @@ export class RevisionService {
     });
 
     if (existingRevision) {
-      throw new ConflictException('이미 진행 중인 재평가가 있습니다.');
+      throw new ConflictException({
+        result: 'failed',
+        message: '이미 진행 중인 재평가가 있습니다.',
+      });
     }
 
     // 재평가 생성
@@ -122,7 +140,10 @@ export class RevisionService {
     });
 
     if (!revision) {
-      throw new NotFoundException('재평가를 찾을 수 없습니다.');
+      throw new NotFoundException({
+        result: 'failed',
+        message: '존재하지 않는 재평가 ID입니다.',
+      });
     }
 
     return this.mapToResponseDto(revision);

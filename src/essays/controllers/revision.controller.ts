@@ -19,6 +19,7 @@ import {
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { RevisionService } from '../services/revision.service';
 import { CreateRevisionDto, RevisionResponseDto } from '../dto/revision.dto';
+import { API_RESPONSE_SCHEMAS } from '../../common/constants/api-response-schemas';
 
 @ApiTags('Revisions')
 @ApiBearerAuth()
@@ -37,14 +38,10 @@ export class RevisionController {
     description: '재평가 요청이 성공적으로 생성되었습니다.',
     type: RevisionResponseDto,
   })
-  @ApiResponse({
-    status: 404,
-    description: '에세이를 찾을 수 없습니다.',
-  })
-  @ApiResponse({
-    status: 409,
-    description: '이미 진행 중인 재평가가 있습니다.',
-  })
+  @ApiResponse(API_RESPONSE_SCHEMAS.REVISION_SUBMISSION_ID_REQUIRED)
+  @ApiResponse(API_RESPONSE_SCHEMAS.REVISION_INVALID_SUBMISSION_ID)
+  @ApiResponse(API_RESPONSE_SCHEMAS.REVISION_SUBMISSION_NOT_FOUND)
+  @ApiResponse(API_RESPONSE_SCHEMAS.REVISION_ALREADY_IN_PROGRESS)
   async createRevision(
     @Body() createRevisionDto: CreateRevisionDto,
   ): Promise<RevisionResponseDto> {
@@ -101,6 +98,7 @@ export class RevisionController {
     return this.revisionService.getRevisions(page, size, sort);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':revisionId')
   @ApiOperation({
     summary: '재평가 상세 조회',
@@ -111,10 +109,7 @@ export class RevisionController {
     description: '재평가 상세 정보가 성공적으로 조회되었습니다.',
     type: RevisionResponseDto,
   })
-  @ApiResponse({
-    status: 404,
-    description: '재평가를 찾을 수 없습니다.',
-  })
+  @ApiResponse(API_RESPONSE_SCHEMAS.REVISION_NOT_FOUND)
   async getRevisionById(
     @Param('revisionId', ParseIntPipe) revisionId: number,
   ): Promise<RevisionResponseDto> {

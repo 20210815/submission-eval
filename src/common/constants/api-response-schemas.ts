@@ -254,6 +254,62 @@ export const API_RESPONSE_SCHEMAS = {
     },
   },
 
+  // Revision API responses
+  REVISION_SUBMISSION_NOT_FOUND: {
+    status: 404,
+    description: '존재하지 않는 제출물',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '존재하지 않는 제출물입니다.',
+      },
+    },
+  },
+
+  REVISION_NOT_FOUND: {
+    status: 404,
+    description: '존재하지 않는 재평가 ID',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '존재하지 않는 재평가 ID입니다.',
+      },
+    },
+  },
+
+  REVISION_SUBMISSION_ID_REQUIRED: {
+    status: 400,
+    description: '필수 필드 누락',
+    schema: {
+      example: {
+        result: 'failed',
+        message: 'submissionId는 필수입니다.',
+      },
+    },
+  },
+
+  REVISION_INVALID_SUBMISSION_ID: {
+    status: 400,
+    description: '유효하지 않은 submission ID 형식',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '유효하지 않은 submission ID입니다.',
+      },
+    },
+  },
+
+  REVISION_ALREADY_IN_PROGRESS: {
+    status: 409,
+    description: '이미 진행 중인 재평가가 있음',
+    schema: {
+      example: {
+        result: 'failed',
+        message: '이미 진행 중인 재평가가 있습니다.',
+      },
+    },
+  },
+
   // 409 Conflict
 
   CONFLICT: {

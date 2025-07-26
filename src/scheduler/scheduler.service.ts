@@ -68,7 +68,7 @@ export class SchedulerService {
         try {
           await this.retrySubmissionEvaluation(submission);
           this.logger.log(`Successfully retried submission ${submission.id}`);
-        } catch (error) {
+        } catch (error: unknown) {
           this.logger.error(
             `Failed to retry submission ${submission.id}:`,
             error instanceof Error ? error.message : error,
@@ -77,8 +77,11 @@ export class SchedulerService {
       }
 
       this.logger.log('Auto-retry job completed');
-    } catch (error) {
-      this.logger.error('Auto-retry job failed:', error);
+    } catch (error: unknown) {
+      this.logger.error(
+        'Auto-retry job failed:',
+        error instanceof Error ? error.message : error,
+      );
     }
   }
 
@@ -161,7 +164,7 @@ export class SchedulerService {
       this.logger.log(
         `Auto-retry successful for submission ${submission.id} with score: ${aiResult.score}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       const apiLatency = Date.now() - startTime;
@@ -264,7 +267,7 @@ export class SchedulerService {
 
       // TODO: 실제 구현에서는 stats 테이블에 저장
       // await this.statsRepository.save(statsData);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(`Failed to generate ${period} statistics:`, error);
     }
   }
