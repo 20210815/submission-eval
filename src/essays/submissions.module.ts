@@ -12,6 +12,7 @@ import { OpenAIService } from './services/openai.service';
 import { TextHighlightingService } from './services/text-highlighting.service';
 import { NotificationService } from './services/notification.service';
 import { RevisionService } from './services/revision.service';
+import { SubmissionMediaService } from './services/submission-media.service';
 import { RevisionController } from './controllers/revision.controller';
 import { CacheCustomModule } from '../cache/cache.module';
 
@@ -29,6 +30,7 @@ import { CacheCustomModule } from '../cache/cache.module';
     TextHighlightingService,
     NotificationService,
     RevisionService,
+    SubmissionMediaService,
   ],
   exports: [SubmissionsService],
 })

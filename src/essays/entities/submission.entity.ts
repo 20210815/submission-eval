@@ -9,6 +9,7 @@ import {
 import { Student } from '../../students/entities/student.entity';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { Revision } from './revision.entity';
+import { SubmissionMedia } from './submission-media.entity';
 import { ComponentType } from '../enums/component-type.enum';
 
 export enum EvaluationStatus {
@@ -76,4 +77,10 @@ export class Submission extends BaseEntity {
 
   @OneToMany(() => Revision, (revision: Revision) => revision.submission)
   revisions: Revision[];
+
+  @OneToMany(
+    () => SubmissionMedia,
+    (media: SubmissionMedia) => media.submission,
+  )
+  media: SubmissionMedia[];
 }
