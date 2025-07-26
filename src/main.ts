@@ -29,10 +29,10 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   const config = new DocumentBuilder()
-    .setTitle('Essay Submission & Evaluation API')
+    .setTitle('Submission & Evaluation API')
     .setDescription(
       `
-      API for student essay submission and AI-powered evaluation system.
+      API for student submission and AI-powered evaluation system.
       
       ## Recent Security & Stability Improvements (2025-01-24)
       
@@ -41,12 +41,12 @@ async function bootstrap() {
       - **JWT Validation**: Added token expiration checking and optimized field querying
       
       ### 📝 Input Validation
-      - **Essay Text Limits**: 10-10,000 characters enforced
+      - **Submission Text Limits**: 10-10,000 characters enforced
       - **File Upload**: Improved validation with proper HTTP status codes
       
       ### 🛡️ System Stability  
       - **Database Safety**: Production synchronization disabled
-      - **Transaction Management**: Essay submission wrapped in transactions
+      - **Transaction Management**: Submission wrapped in transactions
       - **Test Infrastructure**: Fixed FK constraint handling in test cleanup
       
       ### 📋 API Standards
@@ -58,7 +58,7 @@ async function bootstrap() {
     .setVersion('1.1.0')
     .addBearerAuth()
     .addTag('Authentication', 'User signup, login, and JWT token management')
-    .addTag('Submissions', 'Essay submission, retrieval, and AI evaluation')
+    .addTag('Submissions', 'Submission, retrieval, and AI evaluation')
     .addTag('Health', 'System health monitoring')
     .build();
 

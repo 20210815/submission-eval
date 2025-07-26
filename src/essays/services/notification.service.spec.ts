@@ -38,7 +38,7 @@ describe('NotificationService', () => {
   });
 
   describe('notifyEvaluationFailure', () => {
-    const essayId = 1;
+    const submissionId = 1;
     const studentId = 123;
     const errorMessage = 'AI 평가 중 오류가 발생했습니다';
     const traceId = 'test-trace-id';
@@ -74,7 +74,7 @@ describe('NotificationService', () => {
       mockedAxios.post.mockResolvedValue({ status: 200 });
 
       await service.notifyEvaluationFailure(
-        essayId,
+        submissionId,
         studentId,
         errorMessage,
         traceId,
@@ -83,7 +83,7 @@ describe('NotificationService', () => {
       expect(loggerLogSpy).toHaveBeenCalledWith(
         '🔔 NotificationService.notifyEvaluationFailure called:',
         {
-          essayId,
+          submissionId,
           studentId,
           errorMessage,
           traceId,
@@ -98,13 +98,13 @@ describe('NotificationService', () => {
       expect(mockedAxios.post).toHaveBeenCalledWith(
         slackWebhookUrl,
         expect.objectContaining({
-          text: '🚨 에세이 평가 시스템 오류 발생',
+          text: '🚨 제출물 평가 시스템 오류 발생',
           blocks: expect.arrayContaining([
             expect.objectContaining({
               type: 'header',
               text: {
                 type: 'plain_text',
-                text: '🚨 에세이 평가 실패 알림',
+                text: '🚨 제출물 평가 실패 알림',
               },
             }),
             expect.objectContaining({
@@ -112,7 +112,7 @@ describe('NotificationService', () => {
               fields: expect.arrayContaining([
                 expect.objectContaining({
                   type: 'mrkdwn',
-                  text: `*Essay ID:* ${essayId}`,
+                  text: `*Submission ID:* ${submissionId}`,
                 }),
                 expect.objectContaining({
                   type: 'mrkdwn',
@@ -158,7 +158,7 @@ describe('NotificationService', () => {
       });
 
       await service.notifyEvaluationFailure(
-        essayId,
+        submissionId,
         studentId,
         errorMessage,
         traceId,
@@ -188,7 +188,7 @@ describe('NotificationService', () => {
       mockedAxios.post.mockRejectedValue(axiosError);
 
       await expect(
-        service.notifyEvaluationFailure(essayId, studentId, errorMessage),
+        service.notifyEvaluationFailure(submissionId, studentId, errorMessage),
       ).resolves.not.toThrow();
 
       expect(loggerErrorSpy).toHaveBeenCalledWith(
@@ -213,7 +213,7 @@ describe('NotificationService', () => {
       mockedAxios.post.mockRejectedValue(axiosError);
 
       await expect(
-        service.notifyEvaluationFailure(essayId, studentId, errorMessage),
+        service.notifyEvaluationFailure(submissionId, studentId, errorMessage),
       ).resolves.not.toThrow();
 
       expect(loggerErrorSpy).toHaveBeenCalledWith(
@@ -232,12 +232,12 @@ describe('NotificationService', () => {
 
       mockedAxios.post.mockResolvedValue({ status: 200 });
 
-      await service.notifyEvaluationFailure(essayId, studentId, errorMessage);
+      await service.notifyEvaluationFailure(submissionId, studentId, errorMessage);
 
       expect(loggerLogSpy).toHaveBeenCalledWith(
         '🔔 NotificationService.notifyEvaluationFailure called:',
         {
-          essayId,
+          submissionId,
           studentId,
           errorMessage,
           traceId: undefined,

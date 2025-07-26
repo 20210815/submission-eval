@@ -98,10 +98,10 @@ export class OpenAIService {
     componentType: string,
   ): string {
     return `
-    You are an expert English language evaluator. Please evaluate the following ${componentType} essay and provide feedback.
+    You are an expert English language evaluator. Please evaluate the following ${componentType} submission and provide feedback.
 
     Title: ${title}
-    Essay Content: ${submitText}
+    Submission Content: ${submitText}
 
     Please provide your evaluation in the following JSON format:
     {

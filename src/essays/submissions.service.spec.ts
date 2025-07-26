@@ -14,6 +14,7 @@ import { NotificationService } from './services/notification.service';
 import { SubmitSubmissionDto } from './dto/submit-submission.dto';
 import { CacheService } from '../cache/cache.service';
 import { ComponentType } from './enums/component-type.enum';
+import { Revision } from './entities/revision.entity';
 
 describe('SubmissionsService', () => {
   let service: SubmissionsService;
@@ -34,6 +35,13 @@ describe('SubmissionsService', () => {
 
   const mockStudentRepository = {
     findOne: jest.fn(),
+  };
+
+  const mockRevisionRepository = {
+    create: jest.fn(),
+    save: jest.fn(),
+    findOne: jest.fn(),
+    find: jest.fn(),
   };
 
   const mockVideoProcessingService = {
@@ -89,6 +97,10 @@ describe('SubmissionsService', () => {
         {
           provide: getRepositoryToken(Student),
           useValue: mockStudentRepository,
+        },
+        {
+          provide: getRepositoryToken(Revision),
+          useValue: mockRevisionRepository,
         },
         {
           provide: VideoProcessingService,
@@ -255,10 +267,10 @@ describe('SubmissionsService', () => {
       // Start first submission
       const promise1 = service.submitSubmission(studentId, submitSubmissionDto);
 
-      // Try second submission immediately
+      // Try second submission immediately with same componentType
       const promise2 = service.submitSubmission(studentId, {
         ...submitSubmissionDto,
-        componentType: ComponentType.SPEAKING,
+        title: '다른 제목',
       });
 
       const results = await Promise.allSettled([promise1, promise2]);

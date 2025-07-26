@@ -6,7 +6,7 @@ import { RevisionStatus } from '../entities/revision.entity';
 export class CreateRevisionDto {
   @ApiProperty({
     description: 'Submission ID',
-    example: 'sub_12345',
+    example: '1',
   })
   @IsString()
   @IsNotEmpty()
@@ -17,7 +17,7 @@ export class RevisionResponseDto {
   @ApiProperty({ description: '재평가 ID', example: 1 })
   id: number;
 
-  @ApiProperty({ description: '에세이 제출 ID', example: 1 })
+  @ApiProperty({ description: '제출물 ID', example: 1 })
   submissionId: number;
 
   @ApiProperty({ description: '학생 ID', example: 123 })
